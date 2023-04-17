@@ -1,42 +1,39 @@
-//
-// Licensed to the Apache Software Foundation (ASF) under one
-// or more contributor license agreements.  See the NOTICE file
-// distributed with this work for additional information
-// regarding copyright ownership.  The ASF licenses this file
-// to you under the Apache License, Version 2.0 (the
-// "License"); you may not use this file except in compliance
-// with the License.  You may obtain a copy of the License at
-//
-//   http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
-//
-// @project juno
-// @author DeockJin Chung (jin.freestyle@gmail.com)
-// @date 2017. 3. 11. PM 11:38
-//
-
 //go:build darwin
 // +build darwin
+
+/*
+ * Copyright 2023 github.com/fatima-go
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @project fatima-core
+ * @author jin
+ * @date 23. 4. 14. 오후 5:20
+ */
 
 package infra
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/domain"
+	"github.com/fatima-go/juno/web"
 	"regexp"
 	"strconv"
 	"strings"
-	"throosea.com/fatima"
-	"throosea.com/fatima/lib"
-	"throosea.com/juno/domain"
-	"throosea.com/juno/web"
-	"throosea.com/log"
 	"time"
 )
 
@@ -132,10 +129,10 @@ func analyzeProcess(list []*domain.ProcessInfo, ps string, loc *time.Location) {
 
 func mappingProcessInfo(parts []string, list []*domain.ProcessInfo, loc *time.Location) {
 	/*
-	SKTX1100282MN03:jupiter 1100282$ ps -v -o etime -u 501
-	  PID STAT      TIME  SL  RE PAGEIN      VSZ    RSS   LIM     TSIZ  %CPU %MEM COMMAND              ELAPSED
-	96274 S    146:33.07   0   0      0 11998344 1431196     -        0   0.0  8.5 /Applications/Go 07-00:59:49
-	13769 S    119:18.98   0   0      0  7111836 1161400     -        0   0.5  6.9 /Applications/Sl 09-07:24:46
+		SKTX1100282MN03:jupiter 1100282$ ps -v -o etime -u 501
+		  PID STAT      TIME  SL  RE PAGEIN      VSZ    RSS   LIM     TSIZ  %CPU %MEM COMMAND              ELAPSED
+		96274 S    146:33.07   0   0      0 11998344 1431196     -        0   0.0  8.5 /Applications/Go 07-00:59:49
+		13769 S    119:18.98   0   0      0  7111836 1161400     -        0   0.5  6.9 /Applications/Sl 09-07:24:46
 	*/
 	for i := 0; i < len(list); i++ {
 		info := list[i]

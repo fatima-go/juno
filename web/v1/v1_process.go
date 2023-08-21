@@ -40,6 +40,17 @@ func registProcess(controller web.JunoWebServiceController, res http.ResponseWri
 		return
 	}
 
+	if log.IsDebugEnabled() {
+		log.Debug("regist process : %v", params)
+	}
+
+	clientAddress, _ := params["client_address"]
+	if !controller.IsRemoteOperationAllowed(clientAddress) {
+		log.Warn("remote operation is not allowed")
+		web.ResponseError(res, req, http.StatusForbidden, "remote operation is not allowed")
+		return
+	}
+
 	var process, group_id string
 	var ok bool
 	process, ok = params["process"]
@@ -77,6 +88,12 @@ func startProcess(controller web.JunoWebServiceController, res http.ResponseWrit
 		return
 	}
 
+	if !controller.IsRemoteOperationAllowed(req.RemoteAddr) {
+		log.Warn("remote operation is not allowed")
+		web.ResponseError(res, req, http.StatusForbidden, "remote operation is not allowed")
+		return
+	}
+
 	_, ok := params["all"]
 	all := ok
 	var group string
@@ -107,6 +124,12 @@ func stopProcess(controller web.JunoWebServiceController, res http.ResponseWrite
 		return
 	}
 
+	if !controller.IsRemoteOperationAllowed(req.RemoteAddr) {
+		log.Warn("remote operation is not allowed")
+		web.ResponseError(res, req, http.StatusForbidden, "remote operation is not allowed")
+		return
+	}
+
 	_, ok := params["all"]
 	all := ok
 	var group string
@@ -133,6 +156,17 @@ func unregistProcess(controller web.JunoWebServiceController, res http.ResponseW
 	if err != nil {
 		log.Warn("invalid parameter : %s", err.Error())
 		web.ResponseError(res, req, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if log.IsDebugEnabled() {
+		log.Debug("unregist process : %v", params)
+	}
+
+	clientAddress, _ := params["client_address"]
+	if !controller.IsRemoteOperationAllowed(clientAddress) {
+		log.Warn("remote operation is not allowed")
+		web.ResponseError(res, req, http.StatusForbidden, "remote operation is not allowed")
 		return
 	}
 

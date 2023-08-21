@@ -27,6 +27,7 @@ import (
 )
 
 type JunoWebServiceController interface {
+	IsRemoteOperationAllowed(clientIp string) bool
 	ValidateToken(token string, role domain.Role) error
 	GetPackageReport(loc *time.Location) domain.PackageReport
 	GetPackageReportForHealthCheck() map[string]string

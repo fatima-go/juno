@@ -26,16 +26,6 @@ import (
 	"os"
 )
 
-const (
-	PropWebServerAddress     = "webserver.address"
-	PropWebServerPort        = "webserver.port"
-	PropGatewayServerAddress = "gateway.address"
-	PropGatewayServerPort    = "gateway.port"
-	ValueGatewayDefaultPort  = "9190"
-	ValueJunoRegistUrl       = "juno/regist/v1"
-	ValueJunoUnregistUrl     = "juno/unregist/v1"
-)
-
 func ensureDirectory(path string, forceCreate bool) error {
 	if stat, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {

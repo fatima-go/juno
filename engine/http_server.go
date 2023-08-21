@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/fatima-go/fatima-core"
 	"github.com/fatima-go/fatima-log"
+	. "github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/service"
 	"github.com/fatima-go/juno/web"
 	"github.com/fatima-go/juno/web/v1"

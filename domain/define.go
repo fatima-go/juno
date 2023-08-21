@@ -21,6 +21,16 @@
 package domain
 
 const (
+	PropWebServerAddress     = "webserver.address"
+	PropWebServerPort        = "webserver.port"
+	PropGatewayServerAddress = "gateway.address"
+	PropGatewayServerPort    = "gateway.port"
+	ValueGatewayDefaultPort  = "9190"
+	ValueJunoRegistUrl       = "juno/regist/v1"
+	ValueJunoUnregistUrl     = "juno/unregist/v1"
+)
+
+const (
 	HEADER_FATIMA_AUTH_TOKEN = "fatima-auth-token"
 
 	PROC_STATUS_ALIVE = "ALIVE"

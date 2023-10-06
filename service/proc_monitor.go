@@ -140,6 +140,10 @@ func (p *processMonitor) reflectProc(processes []*domain.ProcessInfo) {
 	}
 }
 
+const (
+	AlarmCategoryMonitor = "monitor"
+)
+
 func (p *processMonitor) notifyStatusChange(previous, next domain.ProcessInfo) {
 	if runtime.GOOS == "darwin" {
 		return // DARWIN not support at this time
@@ -157,7 +161,7 @@ func (p *processMonitor) notifyStatusChange(previous, next domain.ProcessInfo) {
 		alarmLvl = monitor.AlarmLevelMinor
 	}
 	msg := fmt.Sprintf("프로세스 상태 감지 : [%s]의 상태가 %s로 변경 되었습니다", next.Name, next.Status)
-	p.fatimaRuntime.GetSystemNotifyHandler().SendAlarmWithCategory(alarmLvl, msg, "monitor")
+	p.fatimaRuntime.GetSystemNotifyHandler().SendAlarmWithCategory(alarmLvl, monitor.ActionUnknown, msg, AlarmCategoryMonitor)
 
 	if next.Status != domain.PROC_STATUS_ALIVE {
 		go p.restartProc(next)
@@ -177,7 +181,7 @@ func (p *processMonitor) restartProc(target domain.ProcessInfo) {
 		log.Info("재시도 최대 회수 초과. 재시도 포기 : %s", target.Name)
 		time.Sleep(time.Second * 1)
 		msg := fmt.Sprintf("프로세스 재시도 최대 횟수 초과 : %s", target.Name)
-		p.fatimaRuntime.GetSystemNotifyHandler().SendAlarmWithCategory(monitor.AlamLevelMajor, msg, "monitor")
+		p.fatimaRuntime.GetSystemNotifyHandler().SendAlarmWithCategory(monitor.AlamLevelMajor, monitor.ActionUnknown, msg, AlarmCategoryMonitor)
 		return
 	}
 
@@ -189,7 +193,7 @@ func (p *processMonitor) restartProc(target domain.ProcessInfo) {
 
 	time.Sleep(time.Second * 3)
 	msg := fmt.Sprintf("프로세스 [%s] 를 재시작합니다", target.Name)
-	p.fatimaRuntime.GetSystemNotifyHandler().SendAlarmWithCategory(monitor.AlarmLevelWarn, msg, "monitor")
+	p.fatimaRuntime.GetSystemNotifyHandler().SendAlarmWithCategory(monitor.AlarmLevelWarn, monitor.ActionUnknown, msg, AlarmCategoryMonitor)
 	time.Sleep(time.Second * 1)
 	procInfo.AddICount()
 	p.procMap[target.Name] = procInfo

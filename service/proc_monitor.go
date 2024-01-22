@@ -154,13 +154,13 @@ func (p *processMonitor) notifyStatusChange(previous, next domain.ProcessInfo) {
 		return
 	}
 
-	log.Warn("[%s] status changed %s to %s", next.Name, previous.Status, next.Status)
+	log.Warn("[%s:%s] status changed %s to %s", next.Name, next.Pid, previous.Status, next.Status)
 	var alarmLvl monitor.AlarmLevel
 	alarmLvl = monitor.AlamLevelMajor
 	if next.Status == domain.PROC_STATUS_ALIVE {
 		alarmLvl = monitor.AlarmLevelMinor
 	}
-	msg := fmt.Sprintf("프로세스 상태 감지 : [%s]의 상태가 %s로 변경 되었습니다", next.Name, next.Status)
+	msg := fmt.Sprintf("프로세스 상태 감지 : [%s]의 상태가 %s로 변경 되었습니다 : pid=%s", next.Name, next.Status, next.Pid)
 	p.fatimaRuntime.GetSystemNotifyHandler().SendAlarmWithCategory(alarmLvl, monitor.ActionUnknown, msg, AlarmCategoryMonitor)
 
 	if next.Status != domain.PROC_STATUS_ALIVE {

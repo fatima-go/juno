@@ -21,6 +21,8 @@
 package service
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/fatima-go/fatima-core"
 	"github.com/fatima-go/fatima-core/builder"
@@ -29,7 +31,11 @@ import (
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/web"
+	"os"
+	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -161,11 +167,99 @@ func (p *processMonitor) notifyStatusChange(previous, next domain.ProcessInfo) {
 		alarmLvl = monitor.AlarmLevelMinor
 	}
 	msg := fmt.Sprintf("프로세스 상태 감지 : [%s]의 상태가 %s로 변경 되었습니다", next.Name, next.Status)
+	output := p.readMeaningfulOutputMessage(next.Name)
+	if len(output) > 0 {
+		msg = fmt.Sprintf("%s\n```%s```", msg, output)
+	}
 	p.fatimaRuntime.GetSystemNotifyHandler().SendAlarmWithCategory(alarmLvl, monitor.ActionUnknown, msg, AlarmCategoryMonitor)
 
 	if next.Status != domain.PROC_STATUS_ALIVE {
 		go p.restartProc(next)
 	}
+}
+
+func (p *processMonitor) readMeaningfulOutputMessage(proc string) string {
+	procDir := filepath.Join(p.fatimaRuntime.GetEnv().GetFolderGuide().GetFatimaHome(),
+		builder.FatimaFolderApp,
+		proc,
+		builder.FatimaFolderProc)
+	pidFile := filepath.Join(procDir, fmt.Sprintf("%s.pid", proc))
+	b, err := os.ReadFile(pidFile)
+	if err != nil {
+		log.Warn("fail to read pid file %s : %s", pidFile, err.Error())
+		return ""
+	}
+
+	pid, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	if err != nil {
+		log.Warn("fail to convert pid number %s : %s", string(b), err.Error())
+		return ""
+	}
+
+	outputFile := filepath.Join(procDir, fmt.Sprintf("%s.%d.output", proc, pid))
+	b, err = os.ReadFile(outputFile)
+	if err != nil {
+		log.Warn("fail to read output file %s : %s", outputFile, err.Error())
+		return ""
+	}
+
+	output := findPanicPoint(b)
+	if len(output) > 0 {
+		// 마지막 패닉 포인트를 찾았다면 해당 내용을 리턴
+		return output
+	}
+
+	if len(b) < 2048 {
+		// 패닉 포인트를 찾진 못했으나 전체 내용이 2k 이하라면 그대로 리턴
+		return string(b)
+	}
+
+	// 얖에서 30라인정도 빼서 그 내용을 리턴
+	return readFirstNLines(b, 30)
+}
+
+func findPanicPoint(output []byte) string {
+	scanner := bufio.NewScanner(bytes.NewReader(output))
+	panicLines := make([]string, 0)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "panic: ") {
+			panicLines = make([]string, 0) // reset
+			panicLines = append(panicLines, line)
+			continue
+		}
+
+		if len(panicLines) > 0 {
+			panicLines = append(panicLines, line)
+		}
+	}
+
+	if len(panicLines) == 0 {
+		return ""
+	}
+
+	var buf bytes.Buffer
+	for _, line := range panicLines {
+		buf.WriteString(line)
+		buf.WriteByte('\n')
+	}
+	return buf.String()
+}
+
+func readFirstNLines(output []byte, lineCount int) string {
+	scanner := bufio.NewScanner(bytes.NewReader(output))
+
+	var buf bytes.Buffer
+	count := 0
+	for scanner.Scan() {
+		line := scanner.Text()
+		buf.WriteString(line)
+		if count < lineCount {
+			buf.WriteByte('\n')
+		}
+	}
+
+	return buf.String()
 }
 
 func (p *processMonitor) restartProc(target domain.ProcessInfo) {
@@ -261,11 +355,12 @@ func (p *processMonitor) isInternalJob(proc string) bool {
 		return false
 	}
 
-	delete(p.internalJobs, proc)
-
+	log.Debug("%s : current=%d, deadline=%d", proc, lib.CurrentTimeMillis(), deadline)
 	if deadline == 0 || lib.CurrentTimeMillis() <= deadline {
 		return true
 	}
+
+	delete(p.internalJobs, proc)
 	return false
 }
 

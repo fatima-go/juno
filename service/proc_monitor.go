@@ -179,8 +179,6 @@ func (p *processMonitor) notifyStatusChange(previous, next domain.ProcessInfo) {
 }
 
 func (p *processMonitor) readMeaningfulOutputMessage(proc string) string {
-	// {FatimaAppFolder}/app/myapp/proc/myapp.pid
-	// /root/fatima-package/app/juno/hellofatima/proc/hellofatima.pid
 	procDir := filepath.Join(p.fatimaRuntime.GetEnv().GetFolderGuide().GetFatimaHome(),
 		builder.FatimaFolderApp,
 		proc,

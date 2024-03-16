@@ -89,6 +89,10 @@ func (service *DomainService) StartProcess(all bool, group string, proc string) 
 }
 
 func startProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) string {
+	return startProcessWithActionCategory(env, proc, "")
+}
+
+func startProcessWithActionCategory(env fatima.FatimaEnv, proc fatima.FatimaPkgProc, actionCategory string) string {
 	if proc == nil {
 		return fmt.Sprintf("UNREGISTED PROCESS")
 	}
@@ -114,7 +118,16 @@ func startProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) string {
 		return buffer.String()
 	}
 
-	childPid, err := ExecuteProgram(env, proc)
+	var (
+		childPid int
+		err      error
+	)
+	if len(actionCategory) == 0 {
+		childPid, err = ExecuteProgram(env, proc)
+	} else {
+		childPid, err = ExecuteProgramWithActionCategory(env, proc, actionCategory)
+	}
+
 	if err != nil {
 		buffer.WriteString(fmt.Sprintf("FAIL TO EXECUTE : %s", err.Error()))
 	} else {

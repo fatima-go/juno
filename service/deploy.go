@@ -482,7 +482,7 @@ func deployToPackage(env fatima.FatimaEnv, dep *Deployment) error {
 
 	// start process
 	if dep.IsGeneralProcessType() {
-		startProcess(env, proc)
+		startProcessWithActionCategory(env, proc, "deploy")
 	} else {
 		// remove all previous revision files
 		removeAllPreviousRevisions()

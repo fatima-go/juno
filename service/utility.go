@@ -35,6 +35,10 @@ import (
 	"time"
 )
 
+const (
+	actionCategoryArgFormat = "actionCategory=%s"
+)
+
 func GetPid(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) int {
 	grep := strings.Trim(proc.GetGrep(), "\n\r\t ")
 	if len(grep) == 0 {
@@ -157,6 +161,34 @@ func ExecuteProgram(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) (int, error
 
 		return cmd.Process.Pid, nil
 	}
+}
+
+// ExecuteProgramWithActionCategory 는 카테고리 정보를 넘겨서 프로그램을 수행한다.
+// 자바 프로세스로 예상되는 쉘 스크립트 수행은 지원하지 않는다
+func ExecuteProgramWithActionCategory(env fatima.FatimaEnv, proc fatima.FatimaPkgProc, actionCategory string) (int, error) {
+	if len(actionCategory) == 0 || hasExecutingShell(env, proc) {
+		return ExecuteProgram(env, proc)
+	}
+
+	GetProcessMonitor().ProcessStart(proc.GetName())
+	workingDir := filepath.Join(env.GetFolderGuide().GetFatimaHome(), builder.FatimaFolderApp, proc.GetName())
+	procPath := proc.GetPath()
+	if len(procPath) == 0 {
+		procPath = filepath.Join(workingDir, proc.GetName())
+	}
+
+	cmd := exec.Command(procPath, fmt.Sprintf(actionCategoryArgFormat, actionCategory))
+	cmd.Dir = workingDir
+	log.Info("Working Dir : %s", workingDir)
+	err := cmd.Start()
+	if err != nil {
+		return 0, err
+	}
+
+	log.Info("executing native program with action category, procName: [%s], procPath: [%s], actionCategory: [%s]",
+		proc.GetName(), procPath, actionCategory)
+
+	return cmd.Process.Pid, nil
 }
 
 func grepJavaFatimaProgramPid(proc fatima.FatimaPkgProc) int {

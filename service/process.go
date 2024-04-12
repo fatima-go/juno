@@ -210,6 +210,7 @@ func executeGoaway(env fatima.FatimaEnv, proc fatima.FatimaPkgProc, pid int) {
 	}
 
 	if isFatimaOrientProcess(env, proc) {
+		// fatima 프레임워크로 제작된 프로세스일 경우만 프로세스 중지시에 SIGUSR1을 보내도록 한다.
 		sendGoawaySignal(proc, pid)
 	}
 
@@ -230,8 +231,8 @@ func executeGoaway(env fatima.FatimaEnv, proc fatima.FatimaPkgProc, pid int) {
 	return
 }
 
-// isFatimaOrientProcess 프로세스 중지시에 SIGUSR1을 보내야할지 판단한다
-// 별도의 sh 파일로 프로세스를 기동하는 케이스이거나 별도의 bin 패스가 명시되어 있을 경우는 보내지 않는다
+// isFatimaOrientProcess fatima 프레임워크로 제작된 프로세스인지 여부를 판단한다.
+// 별도의 실행 sh 파일이 없고 별도의 bin 패스가 명시되어 있지 않으면 fatima 프레임워크로 제작된 프로세스로 판단한다.
 func isFatimaOrientProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) bool {
 	if hasExecutingShell(env, proc) {
 		return false

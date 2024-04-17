@@ -205,10 +205,13 @@ func stopProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) string {
 
 // execute "goaway.sh"
 func executeGoaway(env fatima.FatimaEnv, proc fatima.FatimaPkgProc, pid int) {
-	sendGoawaySignal(proc, pid)
-
 	if proc == nil {
 		return
+	}
+
+	if isFatimaOrientProcess(env, proc) {
+		// fatima 프레임워크로 제작된 프로세스일 경우만 프로세스 중지시에 SIGUSR1을 보내도록 한다.
+		sendGoawaySignal(proc, pid)
 	}
 
 	path := filepath.Join(env.GetFolderGuide().GetFatimaHome(), "app", proc.GetName(), shellGoaway)
@@ -226,6 +229,18 @@ func executeGoaway(env fatima.FatimaEnv, proc fatima.FatimaPkgProc, pid int) {
 
 	log.Info("goaway finished")
 	return
+}
+
+// isFatimaOrientProcess fatima 프레임워크로 제작된 프로세스인지 여부를 판단한다.
+// 별도의 실행 sh 파일이 없고 별도의 bin 패스가 명시되어 있지 않으면 fatima 프레임워크로 제작된 프로세스로 판단한다.
+func isFatimaOrientProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) bool {
+	if hasExecutingShell(env, proc) {
+		return false
+	}
+	if len(proc.GetPath()) > 0 {
+		return false
+	}
+	return true
 }
 
 func sendGoawaySignal(proc fatima.FatimaPkgProc, pid int) {

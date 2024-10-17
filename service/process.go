@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"github.com/fatima-go/fatima-core"
 	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-core/builder/platform"
 	"github.com/fatima-go/fatima-core/lib"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
@@ -36,6 +37,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -74,23 +76,17 @@ func (service *DomainService) StartProcess(all bool, group string, proc string) 
 	summary["package_name"] = service.fatimaRuntime.GetPackaging().GetName()
 
 	var buffer bytes.Buffer
-	cyBarrier := lib.NewCyclicBarrier(size, nil)
-	for _, v := range target {
-		t := v
-		cyBarrier.Dispatch(func() {
-			buffer.WriteString(startProcess(service.fatimaRuntime.GetEnv(), t))
-		})
-	}
-	cyBarrier.Wait()
+	output := startProcessWithWeightGroup(service.fatimaRuntime, target, processExecuteAsync)
+	buffer.WriteString(output)
 	buffer.WriteByte('\n')
 	summary["message"] = buffer.String()
 	report["summary"] = summary
 	return report
 }
 
-func startProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) string {
+func startProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) (int, string) {
 	if proc == nil {
-		return fmt.Sprintf("UNREGISTED PROCESS")
+		return 0, fmt.Sprintf("UNREGISTED PROCESS")
 	}
 
 	/*
@@ -111,7 +107,7 @@ func startProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) string {
 
 	if pid > 0 && inspector.CheckProcessRunningByPid(proc.GetName(), pid) {
 		buffer.WriteString(fmt.Sprintf("ALEADY RUNNING : %d", pid))
-		return buffer.String()
+		return 0, buffer.String()
 	}
 
 	childPid, err := ExecuteProgram(env, proc)
@@ -122,7 +118,7 @@ func startProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) string {
 		GetProcessMonitor().ResetICount(proc.GetName())
 	}
 
-	return buffer.String()
+	return childPid, buffer.String()
 }
 
 func (service *DomainService) StopProcess(all bool, group string, proc string) map[string]interface{} {
@@ -156,23 +152,17 @@ func (service *DomainService) StopProcess(all bool, group string, proc string) m
 	summary["package_name"] = service.fatimaRuntime.GetPackaging().GetName()
 
 	var buffer bytes.Buffer
-	cyBarrier := lib.NewCyclicBarrier(size, nil)
-	for _, v := range target {
-		t := v
-		cyBarrier.Dispatch(func() {
-			buffer.WriteString(stopProcess(service.fatimaRuntime.GetEnv(), t))
-		})
-	}
-	cyBarrier.Wait()
-
+	output := stopProcessWithWeightGroup(service.fatimaRuntime, target, processTerminateAsync)
+	buffer.WriteString(output)
+	buffer.WriteByte('\n')
 	summary["message"] = buffer.String()
 	report["summary"] = summary
 	return report
 }
 
-func stopProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) string {
+func stopProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) (int, string) {
 	if proc == nil {
-		return fmt.Sprintf("UNREGISTED PROCESS")
+		return 0, fmt.Sprintf("UNREGISTED PROCESS")
 	}
 
 	log.Warn("TRY TO STOP PROCESS : %s", proc.GetName())
@@ -184,23 +174,24 @@ func stopProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) string {
 	if comp == "jupiter" || comp == "juno" {
 		log.Warn("%s is not permitted for killing", proc.GetName())
 		buffer.WriteString(fmt.Sprintf("%s is not permitted for killing", proc.GetName()))
-		return buffer.String()
+		return 0, buffer.String()
 	}
 
 	pid := GetPid(env, proc)
 	if pid < 1 || !inspector.CheckProcessRunningByPid(proc.GetName(), pid) {
 		buffer.WriteString("NOT RUNNING\n")
-	} else {
-		executeGoaway(env, proc, pid)
-		err := KillProgram(proc.GetName(), pid)
-		if err != nil {
-			buffer.WriteString(fmt.Sprintf("FAIL TO KILL %s[%d] : %s", proc.GetName(), pid, err.Error()))
-		} else {
-			buffer.WriteString(fmt.Sprintf("KILLED %d\n", pid))
-		}
+		return 0, buffer.String()
 	}
 
-	return buffer.String()
+	executeGoaway(env, proc, pid)
+	err := KillProgram(proc.GetName(), pid)
+	if err != nil {
+		buffer.WriteString(fmt.Sprintf("FAIL TO KILL %s[%d] : %s", proc.GetName(), pid, err.Error()))
+	} else {
+		buffer.WriteString(fmt.Sprintf("KILLED %d\n", pid))
+	}
+
+	return pid, buffer.String()
 }
 
 // execute "goaway.sh"
@@ -790,3 +781,280 @@ type DeploymentBuildGit struct {
 	Commit  string `json:"commit"`
 	Message string `json:"message,omitempty"`
 }
+
+func StartDeadProcessesWithWeightGroup(fatimaRuntime fatima.FatimaRuntime) {
+	yamlConfig := builder.NewYamlFatimaPackageConfig(fatimaRuntime.GetEnv())
+
+	targetProcList := make([]fatima.FatimaPkgProc, 0)
+	for _, proc := range yamlConfig.Processes {
+		if domain.IsManagedOpmProcess(proc) {
+			continue // skip OPM
+		}
+
+		if !domain.IsStartingTarget(fatimaRuntime, proc.GetStartMode()) {
+			log.Info("skip start process : %s", proc.GetName())
+			continue
+		}
+
+		targetProcList = append(targetProcList, proc)
+	}
+	startProcessWithWeightGroup(fatimaRuntime, targetProcList, processExecuteSerial)
+}
+
+func startProcessWithWeightGroup(fatimaRuntime fatima.FatimaRuntime,
+	targetProcList []fatima.FatimaPkgProc,
+	executeFunc ProcessActionFunc) string {
+	platformImpl := platform.OSPlatform{}
+	procList, err := platformImpl.GetProcesses()
+	if err != nil {
+		return ""
+	}
+
+	weightGroups := make(map[int][]fatima.FatimaPkgProc)
+
+	// gather target process list as weight group
+	for _, p := range targetProcList {
+		pid := GetPid(fatimaRuntime.GetEnv(), p)
+		if pid > 0 {
+			if domain.ExistInProcessListWithPid(procList, pid) {
+				continue // skip alive process
+			}
+		}
+		deadProcessList, ok := weightGroups[p.GetWeight()]
+		if !ok {
+			deadProcessList = make([]fatima.FatimaPkgProc, 0)
+		}
+		deadProcessList = append(deadProcessList, p)
+		weightGroups[p.GetWeight()] = deadProcessList
+	}
+
+	// sort group with weight
+	weightList := make([]int, 0)
+	for weightKey, _ := range weightGroups {
+		weightList = append(weightList, weightKey)
+	}
+	sort.Sort(ByWeightDesc(weightList))
+
+	// launch process by weight group
+	var buffer bytes.Buffer
+	for _, weight := range weightList {
+		weightedProcList := weightGroups[weight]
+		log.Info("weight %d : [%s]", weight, extractProcessNameList(weightedProcList))
+		launchedProcList, output := executeFunc(fatimaRuntime.GetEnv(), weightedProcList)
+		buffer.WriteString(output)
+		if weight > 0 {
+			// we don't need checking weight 0 process group
+			err = checkProcessAliveWithDeadline(fatimaRuntime.GetEnv(), launchedProcList, time.Second*3)
+			if err != nil {
+				log.Error("checkProcessAliveWithDeadline failed : %s", err.Error())
+			}
+		}
+	}
+	return buffer.String()
+}
+
+type ProcessActionFunc func(env fatima.FatimaEnv, procList []fatima.FatimaPkgProc) (ProcessBriefInfo, string)
+
+func processExecuteSerial(env fatima.FatimaEnv, procList []fatima.FatimaPkgProc) (ProcessBriefInfo, string) {
+	launchedProcList := make([]ProcessNameAndPid, 0)
+	for _, proc := range procList {
+		item := ProcessNameAndPid{ProcName: proc.GetName()}
+		var err error
+		item.Pid, err = ExecuteProgram(env, proc)
+		if err != nil {
+			continue
+		}
+		launchedProcList = append(launchedProcList, item)
+	}
+	return launchedProcList, ""
+}
+
+func processExecuteAsync(env fatima.FatimaEnv, procList []fatima.FatimaPkgProc) (ProcessBriefInfo, string) {
+	launchedProcList := make([]ProcessNameAndPid, 0)
+
+	size := len(procList)
+	if size == 0 {
+		return launchedProcList, ""
+	}
+
+	mu := sync.Mutex{}
+	var buffer bytes.Buffer
+	cyBarrier := lib.NewCyclicBarrier(size, nil)
+	for _, v := range procList {
+		t := v
+		cyBarrier.Dispatch(func() {
+			pid, output := startProcess(env, t)
+			mu.Lock()
+			buffer.WriteString(output)
+			buffer.WriteByte('\n')
+			if pid > 0 {
+				item := ProcessNameAndPid{ProcName: t.GetName()}
+				item.Pid = pid
+				launchedProcList = append(launchedProcList, item)
+			}
+			mu.Unlock()
+		})
+	}
+	cyBarrier.Wait()
+	return launchedProcList, buffer.String()
+}
+
+func stopProcessWithWeightGroup(fatimaRuntime fatima.FatimaRuntime,
+	targetProcList []fatima.FatimaPkgProc,
+	executeFunc ProcessActionFunc) string {
+	weightGroups := make(map[int][]fatima.FatimaPkgProc)
+
+	// gather target process list as weight group
+	for _, p := range targetProcList {
+		processList, ok := weightGroups[p.GetWeight()]
+		if !ok {
+			processList = make([]fatima.FatimaPkgProc, 0)
+		}
+		processList = append(processList, p)
+		weightGroups[p.GetWeight()] = processList
+	}
+
+	// sort group with weight
+	weightList := make([]int, 0)
+	for weightKey, _ := range weightGroups {
+		weightList = append(weightList, weightKey)
+	}
+	sort.Sort(ByWeightAsc(weightList))
+
+	// handle process by weight group
+	var buffer bytes.Buffer
+	for _, weight := range weightList {
+		weightedProcList := weightGroups[weight]
+		log.Info("weight %d : [%s]", weight, extractProcessNameList(weightedProcList))
+		launchedProcList, output := executeFunc(fatimaRuntime.GetEnv(), weightedProcList)
+		buffer.WriteString(output)
+		if launchedProcList.IsAllDead() {
+			continue
+		}
+		time.Sleep(time.Second)
+	}
+	return buffer.String()
+}
+
+func processTerminateAsync(env fatima.FatimaEnv, procList []fatima.FatimaPkgProc) (ProcessBriefInfo, string) {
+	launchedProcList := make([]ProcessNameAndPid, 0)
+
+	size := len(procList)
+	if size == 0 {
+		return launchedProcList, ""
+	}
+
+	mu := sync.Mutex{}
+	var buffer bytes.Buffer
+	cyBarrier := lib.NewCyclicBarrier(size, nil)
+	for _, v := range procList {
+		t := v
+		cyBarrier.Dispatch(func() {
+			pid, output := stopProcess(env, t)
+			mu.Lock()
+			buffer.WriteString(output)
+			if pid > 0 {
+				item := ProcessNameAndPid{ProcName: t.GetName()}
+				item.Pid = pid
+				launchedProcList = append(launchedProcList, item)
+			}
+			mu.Unlock()
+		})
+	}
+	cyBarrier.Wait()
+	return launchedProcList, buffer.String()
+}
+
+func extractProcessNameList(list []fatima.FatimaPkgProc) string {
+	nameList := make([]string, 0)
+	for _, item := range list {
+		nameList = append(nameList, item.GetName())
+	}
+	return strings.Join(nameList, ",")
+}
+
+type ProcessNameAndPid struct {
+	ProcName string
+	Pid      int
+}
+
+type ProcessBriefInfo []ProcessNameAndPid
+
+func (p ProcessBriefInfo) IsAllDead() bool {
+	for _, proc := range p {
+		if proc.Pid > 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func getMaxStartingSeconds(env fatima.FatimaEnv, procList []ProcessNameAndPid) time.Duration {
+	yamlConfig := builder.NewYamlFatimaPackageConfig(env)
+	maxWaitSec := 0
+	for _, proc := range procList {
+		p := yamlConfig.GetProcByName(proc.ProcName)
+		if p == nil {
+			continue
+		}
+		if p.GetStartSec() > maxWaitSec {
+			maxWaitSec = p.GetStartSec()
+		}
+	}
+
+	return time.Duration(max(1, maxWaitSec)) * time.Second
+}
+
+// checkProcessAliveWithDeadline check process in list alive or not
+func checkProcessAliveWithDeadline(env fatima.FatimaEnv, procList []ProcessNameAndPid, deadline time.Duration) error {
+	if len(procList) == 0 {
+		return nil
+	}
+
+	time.Sleep(getMaxStartingSeconds(env, procList)) // initial sleep
+
+	lastFailedProcName := ""
+	start := time.Now()
+	for {
+		if time.Since(start) > deadline {
+			return fmt.Errorf("deadline exceeded. fail proc=%s", lastFailedProcName)
+		}
+
+		fine := true
+		for _, procItem := range procList {
+			if procItem.Pid == 0 {
+				// skip. (maybe it has own start script)
+				continue
+			}
+			log.Trace("check running %s:%d", procItem.ProcName, procItem.Pid)
+			running := inspector.CheckProcessRunningByPid(procItem.ProcName, procItem.Pid)
+			if !running {
+				fine = false
+				lastFailedProcName = procItem.ProcName
+				log.Trace("not running %s:%d", procItem.ProcName, procItem.Pid)
+				break
+			}
+		}
+
+		if fine {
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	log.Debug("checkProcessAliveWithDeadline finished : %v", procList)
+	return nil
+}
+
+type ByWeightDesc []int
+
+func (a ByWeightDesc) Len() int           { return len(a) }
+func (a ByWeightDesc) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByWeightDesc) Less(i, j int) bool { return a[i] > a[j] }
+
+type ByWeightAsc []int
+
+func (a ByWeightAsc) Len() int           { return len(a) }
+func (a ByWeightAsc) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByWeightAsc) Less(i, j int) bool { return a[i] < a[j] }

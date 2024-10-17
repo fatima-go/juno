@@ -1,9 +1,9 @@
 module github.com/fatima-go/juno
 
-go 1.17
+go 1.21
 
 require (
-	github.com/fatima-go/fatima-core v1.1.2
+	github.com/fatima-go/fatima-core v1.1.3
 	github.com/fatima-go/fatima-log v1.0.0
 	github.com/gorilla/handlers v1.4.0
 	github.com/gorilla/mux v1.6.2

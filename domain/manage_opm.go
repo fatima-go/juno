@@ -20,7 +20,9 @@
 
 package domain
 
-import "github.com/fatima-go/fatima-core/builder"
+import (
+	"github.com/fatima-go/fatima-core"
+)
 
 var managedOpmProcessSet = map[string]struct{}{"jupiter": {}, "juno": {}, "saturn": {}}
 
@@ -37,11 +39,11 @@ func IsManagedOpmProcessName(procName string) bool {
 	return ok
 }
 
-func IsManagedOpmProcess(p builder.ProcessItem) bool {
-	if p.Gid != 1 {
+func IsManagedOpmProcess(p fatima.FatimaPkgProc) bool {
+	if p.GetGid() != 1 {
 		return false // 1 : OPM
 	}
 
-	_, ok := managedOpmProcessSet[p.Name]
+	_, ok := managedOpmProcessSet[p.GetName()]
 	return ok
 }

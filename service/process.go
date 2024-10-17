@@ -1014,9 +1014,9 @@ func checkProcessAliveWithDeadline(env fatima.FatimaEnv, procList []ProcessNameA
 	time.Sleep(getMaxStartingSeconds(env, procList)) // initial sleep
 
 	lastFailedProcName := ""
-	startMillis := lib.CurrentTimeMillis()
+	start := time.Now()
 	for {
-		if int64(lib.CurrentTimeMillis()-startMillis) > deadline.Milliseconds() {
+		if time.Since(start) > deadline {
 			return fmt.Errorf("deadline exceeded. fail proc=%s", lastFailedProcName)
 		}
 

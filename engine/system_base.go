@@ -145,7 +145,7 @@ func (system *SystemBase) SystemHAStatusChanged(newHAStatus monitor.HAStatus) {
 
 		pid := service.GetPid(system.fatimaRuntime.GetEnv(), p)
 		if pid > 0 {
-			if isFound(procList, pid) {
+			if ExistInProcessListWithPid(procList, pid) {
 				if newHAStatus == monitor.HA_STATUS_STANDBY {
 					service.KillProgram(p.GetName(), pid)
 				}
@@ -179,7 +179,7 @@ func (system *SystemBase) SystemPSStatusChanged(newPSStatus monitor.PSStatus) {
 
 		pid := service.GetPid(system.fatimaRuntime.GetEnv(), p)
 		if pid > 0 {
-			if isFound(procList, pid) {
+			if ExistInProcessListWithPid(procList, pid) {
 				if newPSStatus == monitor.PS_STATUS_SECONDARY {
 					service.KillProgram(p.GetName(), pid)
 				}
@@ -279,6 +279,11 @@ func removeOldRevision(path string) {
 func startDeadProcesses(fatimaRuntime fatima.FatimaRuntime) {
 	time.Sleep(time.Second * 3)
 
+	//startDeadProcessesSerial(fatimaRuntime)
+	service.StartDeadProcessesWithWeightGroup(fatimaRuntime)
+}
+
+func startDeadProcessesSerial(fatimaRuntime fatima.FatimaRuntime) {
 	yamlConfig := builder.NewYamlFatimaPackageConfig(fatimaRuntime.GetEnv())
 
 	platformImpl := platform.OSPlatform{}
@@ -292,40 +297,17 @@ func startDeadProcesses(fatimaRuntime fatima.FatimaRuntime) {
 			continue // skip OPM
 		}
 
-		if !isStartingTarget(fatimaRuntime, p.GetStartMode()) {
+		if !IsStartingTarget(fatimaRuntime, p.GetStartMode()) {
 			log.Info("skip start process : %s", p.GetName())
 			continue
 		}
 		pid := service.GetPid(fatimaRuntime.GetEnv(), p)
 		if pid > 0 {
-			if isFound(procList, pid) {
+			if ExistInProcessListWithPid(procList, pid) {
 				continue
 			}
 		}
+		log.Trace("startDeadProcesses : %s", p.Name)
 		service.ExecuteProgram(fatimaRuntime.GetEnv(), p)
 	}
-}
-
-func isStartingTarget(fatimaRuntime fatima.FatimaRuntime, startMode fatima.ProcessStartMode) bool {
-	switch startMode {
-	case fatima.StartModeByJuno:
-		return true
-	case fatima.StartModeAlone:
-		return false
-	case fatima.StartModeByHA:
-		return fatimaRuntime.GetSystemStatus().IsActive()
-	case fatima.StartModeByPS:
-		return fatimaRuntime.GetSystemStatus().IsPrimary()
-	}
-
-	return false
-}
-
-func isFound(list []fatima.Process, pid int) bool {
-	for _, p := range list {
-		if p.Pid() == pid {
-			return true
-		}
-	}
-	return false
 }

@@ -20,6 +20,8 @@
 
 package domain
 
+import "github.com/fatima-go/fatima-core"
+
 type ProcessReport struct {
 	Package     BriefPackage `json:"package"`
 	Process     Process      `json:"process"`
@@ -75,4 +77,28 @@ type CronItem struct {
 	Desc   string `json:"desc,omitempty"`
 	Spec   string `json:"spec,omitempty"`
 	Sample string `json:"sample,omitempty"`
+}
+
+func IsStartingTarget(fatimaRuntime fatima.FatimaRuntime, startMode fatima.ProcessStartMode) bool {
+	switch startMode {
+	case fatima.StartModeByJuno:
+		return true
+	case fatima.StartModeAlone:
+		return false
+	case fatima.StartModeByHA:
+		return fatimaRuntime.GetSystemStatus().IsActive()
+	case fatima.StartModeByPS:
+		return fatimaRuntime.GetSystemStatus().IsPrimary()
+	}
+
+	return false
+}
+
+func ExistInProcessListWithPid(list []fatima.Process, pid int) bool {
+	for _, p := range list {
+		if p.Pid() == pid {
+			return true
+		}
+	}
+	return false
 }

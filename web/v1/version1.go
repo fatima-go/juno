@@ -93,6 +93,8 @@ func (version1 *Version1Handler) HandleProcess(method string, res http.ResponseW
 
 func (version1 *Version1Handler) HandleCron(method string, res http.ResponseWriter, req *http.Request) {
 	switch method {
+	case "summary":
+		version1.secureHandle(domain.ROLE_OPERATOR, res, req, summaryCronList)
 	case "list":
 		version1.secureHandle(domain.ROLE_OPERATOR, res, req, displayCronCommands)
 	case "rerun":

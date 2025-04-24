@@ -39,6 +39,7 @@ type JunoWebServiceController interface {
 	StopProcess(all bool, group string, proc string) map[string]interface{}
 	StartProcess(all bool, group string, proc string) map[string]interface{}
 	ListCronCommand() map[string]interface{}
+	SummaryCronList() map[string]interface{}
 	RerunCronCommand(proc string, command string, sample string) map[string]interface{}
 	DeployPackage(mr *multipart.Reader) (string, error)
 	ClearIcProcess(all bool, group string, proc string) map[string]interface{}

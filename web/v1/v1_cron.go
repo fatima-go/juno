@@ -27,6 +27,17 @@ import (
 	"net/http"
 )
 
+func summaryCronList(controller web.JunoWebServiceController, res http.ResponseWriter, req *http.Request) {
+	report := controller.SummaryCronList()
+	b, err := json.Marshal(report)
+	if err != nil {
+		log.Warn("fail to build json response : %s", err.Error())
+		web.ResponseError(res, req, http.StatusInternalServerError, err.Error())
+		return
+	}
+	web.ResponseSuccess(res, req, string(b))
+}
+
 func displayCronCommands(controller web.JunoWebServiceController, res http.ResponseWriter, req *http.Request) {
 	report := controller.ListCronCommand()
 	b, err := json.Marshal(report)

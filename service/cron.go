@@ -25,14 +25,144 @@ import (
 	"fmt"
 	"github.com/fatima-go/fatima-core/builder"
 	"github.com/fatima-go/fatima-log"
-	"io/ioutil"
+	"github.com/fatima-go/juno/domain"
+	"github.com/robfig/cron"
 	"os"
 	"path/filepath"
+	"sort"
+	"time"
 )
 
 const (
 	valueCronsDir = "crons"
 )
+
+func (service *DomainService) SummaryCronList() map[string]interface{} {
+	report := make(map[string]interface{})
+
+	log.Info("SummaryCronList")
+
+	commandList := make([]domain.ProcessBatch, 0)
+	yamlConfig := builder.NewYamlFatimaPackageConfig(service.fatimaRuntime.GetEnv())
+	go removeUnusedCronsFiles(service.GetCronsDir(), yamlConfig)
+	for _, p := range yamlConfig.Processes {
+		if p.Gid == 1 {
+			continue // 1 : OPM
+		}
+		file := filepath.Join(service.GetCronsDir(), buildCronJsonFilename(p.Name))
+		b, err := os.ReadFile(file)
+		if err != nil {
+			continue
+		}
+
+		//cronJob := make(map[string]interface{})
+		processBatch := domain.ProcessBatch{}
+		err = json.Unmarshal(b, &processBatch)
+		if err != nil {
+			log.Warn("%s invalid json", p.Name)
+			continue
+		}
+		//cronJob[p.ProcessName] = m
+		commandList = append(commandList, processBatch)
+	}
+
+	report["package_group"] = service.fatimaRuntime.GetPackaging().GetGroup()
+	report["package_host"] = service.fatimaRuntime.GetPackaging().GetHost()
+	summary := make(map[string]interface{})
+	summary["package_name"] = service.fatimaRuntime.GetPackaging().GetName()
+	summary["batches"] = rebuildHourlyBatches(commandList)
+	report["summary"] = summary
+
+	return report
+}
+
+func rebuildHourlyBatches(list []domain.ProcessBatch) domain.BatchList {
+	doc := domain.BatchList{}
+
+	for _, item := range list {
+		for _, job := range item.JobList {
+			schedule, err := cron.Parse(job.Spec)
+			if err != nil {
+				log.Warn("%s invalid spec : %s", job.Name, err.Error())
+				continue
+			}
+
+			specSchedule, ok := schedule.(*cron.SpecSchedule)
+			if !ok {
+				log.Warn("%s not SpecSchedule type", job.Name)
+				continue
+			}
+
+			scheduled := dispatchTimes(job, specSchedule)
+			for _, next := range scheduled {
+				hourlyBatch := doc.FindHourlyBatch(next.Hour())
+				if !hourlyBatch.Valid {
+					hourlyBatch.Hour = next.Hour()
+					hourlyBatch = hourlyBatch.ReflectProcessBatch(domain.NewProcessBatch(item.ProcessName, job))
+					doc = doc.ReflectHourlyBatch(hourlyBatch)
+					continue
+				}
+				processBatch := hourlyBatch.FindProcessBatch(item.ProcessName)
+				if !processBatch.Valid {
+					hourlyBatch = hourlyBatch.ReflectProcessBatch(domain.NewProcessBatch(item.ProcessName, job))
+					doc = doc.ReflectHourlyBatch(hourlyBatch)
+					continue
+				}
+				hourlyBatch = hourlyBatch.ReflectProcessBatch(processBatch.ReflectJob(job))
+				doc = doc.ReflectHourlyBatch(hourlyBatch)
+			}
+		}
+	}
+
+	sort.Sort(doc.List)
+	return doc
+}
+
+func dispatchTimes(job domain.BatchJob, schedule *cron.SpecSchedule) []time.Time {
+	scheduled := make([]time.Time, 0)
+	midnight := time.Date(time.Now().Year(),
+		time.Now().Month(),
+		time.Now().Day(),
+		0,
+		0,
+		0,
+		0,
+		time.Local).Add(-time.Second)
+
+	t := midnight
+	today := false
+	for {
+		next := schedule.Next(t)
+		if today && !isSameDay(t, next) {
+			break
+		}
+
+		scheduled = append(scheduled, next)
+		//log.Info("[%s::%s] next H=%s", job.Name, job.Spec, next)
+		//log.Info("[%s::%s] diff(%d-%d) = %d", job.ProcessName, job.Spec, next.Unix(), t.Unix(), next.Unix()-t.Unix())
+		if today && next.Unix()-t.Unix() <= 61 {
+			//log.Info("[%s::%s] diff(%d-%d) = %d", job.Name, job.Spec, next.Unix(), t.Unix(), next.Unix()-t.Unix())
+			t = time.Date(time.Now().Year(),
+				time.Now().Month(),
+				time.Now().Day(),
+				next.Hour()+1,
+				0,
+				0,
+				0,
+				time.Local).Add(-time.Second)
+			today = true
+			continue
+		}
+		today = true
+		t = next
+	}
+
+	return scheduled
+}
+
+func isSameDay(t1, t2 time.Time) bool {
+	return t1.Year() == t2.Year() && t1.Month() == t2.Month() && t1.Day() == t2.Day()
+}
 
 func (service *DomainService) ListCronCommand() map[string]interface{} {
 	report := make(map[string]interface{})
@@ -59,7 +189,7 @@ func (service *DomainService) ListCronCommand() map[string]interface{} {
 			log.Warn("%s invalid json", p.Name)
 			continue
 		}
-		//cronJob[p.Name] = m
+		//cronJob[p.ProcessName] = m
 		commandList = append(commandList, m)
 	}
 
@@ -86,7 +216,7 @@ func removeUnusedCronsFiles(dir string, yamlConfig *builder.YamlFatimaPackageCon
 		set[buildCronJsonFilename(p.Name)] = struct{}{}
 	}
 
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		log.Warn("fail to read crons dir : %s", err.Error())
 		return
@@ -96,7 +226,7 @@ func removeUnusedCronsFiles(dir string, yamlConfig *builder.YamlFatimaPackageCon
 		_, ok := set[f.Name()]
 		if !ok {
 			log.Info("del : %s", f.Name())
-			os.Remove(filepath.Join(dir, f.Name()))
+			_ = os.Remove(filepath.Join(dir, f.Name()))
 		}
 	}
 }

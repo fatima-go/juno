@@ -29,7 +29,6 @@ import (
 	"github.com/fatima-go/fatima-core/lib"
 	"github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/web"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -266,7 +265,7 @@ func countFD(info *domain.ProcessInfo) {
 		info.Pid,
 		"fd")
 
-	files, err := ioutil.ReadDir(filePath)
+	files, err := os.ReadDir(filePath)
 	if err == nil {
 		info.FDCount = fmt.Sprintf("%d", len(files))
 	}
@@ -282,7 +281,7 @@ func countThread(info *domain.ProcessInfo) {
 		info.Pid,
 		"task")
 
-	files, err := ioutil.ReadDir(filePath)
+	files, err := os.ReadDir(filePath)
 	if err == nil {
 		info.Thread = fmt.Sprintf("%d", len(files))
 	}

@@ -22,6 +22,8 @@ package domain
 
 import (
 	"fmt"
+	log "github.com/fatima-go/fatima-log"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -51,6 +53,12 @@ func NewPackagePoint(pack string) PackagePoint {
 	return data
 }
 
+func NewPackageReport() PackageReport {
+	p := PackageReport{}
+	p.Platform = NewPlatformInfo()
+	return p
+}
+
 type PackageReport struct {
 	Group    string         `json:"package_group"`
 	Host     string         `json:"package_host"`
@@ -61,10 +69,88 @@ type PackageReport struct {
 	Platform PlatformInfo   `json:"platform"`
 }
 
-func NewPackageReport() PackageReport {
-	p := PackageReport{}
-	p.Platform = NewPlatformInfo()
+func (p PackageReport) Sort(sortType SortType, order Order) PackageReport {
+	switch sortType {
+	case SortTypeName:
+		return p.sortWithName(order)
+	}
+
 	return p
+}
+
+func (p PackageReport) sortWithName(order Order) PackageReport {
+	if order == OrderNone {
+		return p
+	}
+
+	orderedProcInfo := make([]ProcessInfo, 0)
+	for _, groupProcInfo := range p.splitProcessWithGroup() {
+		if !IsOpmGroup(groupProcInfo.GroupName) {
+			if order == OrderAsc {
+				log.Info("%s ascending", groupProcInfo.GroupName)
+				sort.Sort(ByProcessNameAsc(groupProcInfo.Entries))
+			} else if order == OrderDesc {
+				log.Info("%s descending", groupProcInfo.GroupName)
+				sort.Sort(ByProcessNameDesc(groupProcInfo.Entries))
+			}
+		}
+		orderedProcInfo = append(orderedProcInfo, groupProcInfo.Entries...)
+	}
+	p.ProcInfo = orderedProcInfo
+	return p
+}
+
+func (p PackageReport) splitProcessWithGroup() []*GroupProcessInfo {
+	groupList := make([]*GroupProcessInfo, 0)
+
+	for _, proc := range p.ProcInfo {
+		info := findGroupInList(groupList, proc.Group)
+		if info == nil {
+			info = &GroupProcessInfo{}
+			info.GroupName = proc.Group
+			groupList = append(groupList, info)
+		}
+		info.addEntry(proc)
+	}
+
+	return groupList
+}
+
+func findGroupInList(list []*GroupProcessInfo, groupName string) *GroupProcessInfo {
+	for _, record := range list {
+		if record.GroupName == groupName {
+			return record
+		}
+	}
+	return nil
+}
+
+type GroupProcessInfo struct {
+	GroupName string
+	Entries   []ProcessInfo
+}
+
+func (g *GroupProcessInfo) addEntry(entry ProcessInfo) {
+	if g.Entries == nil {
+		g.Entries = make([]ProcessInfo, 0)
+	}
+	g.Entries = append(g.Entries, entry)
+}
+
+type ByProcessNameAsc []ProcessInfo
+
+func (n ByProcessNameAsc) Len() int      { return len(n) }
+func (n ByProcessNameAsc) Swap(i, j int) { n[i], n[j] = n[j], n[i] }
+func (n ByProcessNameAsc) Less(i, j int) bool {
+	return n[i].Name < n[j].Name
+}
+
+type ByProcessNameDesc []ProcessInfo
+
+func (n ByProcessNameDesc) Len() int      { return len(n) }
+func (n ByProcessNameDesc) Swap(i, j int) { n[i], n[j] = n[j], n[i] }
+func (n ByProcessNameDesc) Less(i, j int) bool {
+	return n[i].Name > n[j].Name
 }
 
 type PackageSummary struct {
@@ -92,7 +178,7 @@ type ProcessInfo struct {
 
 func NewProcessInfo() *ProcessInfo {
 	info := ProcessInfo{}
-	info.Status = PROC_STATUS_DEAD
+	info.Status = ProcStatusDead
 	info.CpuUtil = "-"
 	info.FDCount = "-"
 	info.Thread = "-"

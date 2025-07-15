@@ -89,7 +89,7 @@ func (i SystemInspector) MeasureProcessStatus(list []*domain.ProcessInfo, loc *t
 }
 
 func countFD(info *domain.ProcessInfo) {
-	if info.Status != domain.PROC_STATUS_ALIVE {
+	if info.Status != domain.ProcStatusAlive {
 		return
 	}
 

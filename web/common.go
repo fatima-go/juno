@@ -78,6 +78,11 @@ func GetFatimaClientTimezone(req *http.Request) *time.Location {
 	return time.UTC
 }
 
+func ParsingQueryParam(req *http.Request, key string) string {
+	q := req.URL.Query()
+	return q.Get(key)
+}
+
 func writeResponseHeader(res http.ResponseWriter, req *http.Request, httpStatusCode int) {
 	res.Header().Set(HeaderAccessControlAllowOrigin, "*")
 	res.Header().Set(HeaderAccessControlAllowHeaders, AccessControlAllowHeaderList)

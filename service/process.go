@@ -55,7 +55,7 @@ func (service *DomainService) StartProcess(all bool, group string, proc string) 
 	if all {
 		target = yamlConfig.GetAllProc(true)
 	} else if len(group) > 0 {
-		if strings.ToLower(group) == "opm" {
+		if domain.IsOpmGroup(group) {
 			report["system"] = web.SystemResponse{Code: 700, Message: "OPM group not permitted"}
 			return report
 		}
@@ -131,7 +131,7 @@ func (service *DomainService) StopProcess(all bool, group string, proc string) m
 	if all {
 		target = yamlConfig.GetAllProc(true)
 	} else if len(group) > 0 {
-		if strings.ToLower(group) == "opm" {
+		if domain.IsOpmGroup(group) {
 			report["system"] = web.SystemResponse{Code: 700, Message: "OPM group not permitted"}
 			return report
 		}
@@ -332,7 +332,7 @@ func (service *DomainService) UnregistProcess(proc string) error {
 	log.Debug("removed log dir : %s", appLogDir)
 
 	// remove app revisions
-	appRevDir := filepath.Join(fatimaDir, builder.FatimaFolderApp, domain.FOLDER_APP_REVISION, proc)
+	appRevDir := filepath.Join(fatimaDir, builder.FatimaFolderApp, domain.FolderAppRevision, proc)
 	os.RemoveAll(appRevDir)
 	log.Debug("removed rev dir : %s", appRevDir)
 
@@ -359,7 +359,7 @@ func (service *DomainService) ClearIcProcess(all bool, group string, proc string
 	if all {
 		target = yamlConfig.GetAllProc(true)
 	} else if len(group) > 0 {
-		if strings.ToLower(group) == "opm" {
+		if domain.IsOpmGroup(group) {
 			report["system"] = web.SystemResponse{Code: 700, Message: "OPM group not permitted"}
 			return report
 		}
@@ -404,7 +404,7 @@ func (service *DomainService) DeploymentHistory(all bool, group string, proc str
 	if all {
 		target = yamlConfig.GetAllProc(true)
 	} else if len(group) > 0 {
-		if strings.ToLower(group) == "opm" {
+		if domain.IsOpmGroup(group) {
 			report["system"] = web.SystemResponse{Code: 700, Message: "OPM group not permitted"}
 			return report
 		}

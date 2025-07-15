@@ -296,7 +296,7 @@ func buildDeployRequest(env fatima.FatimaEnv, mr *multipart.Reader) (*DeployRequ
 		slurp, err := io.ReadAll(p)
 		name = cutQuatation(name)
 		log.Trace("name value : %s", name)
-		if name == domain.PACKAGE_DEPLOY_FAR {
+		if name == domain.PackageDeployFar {
 			// form-data; name="far"; filename="example.far"
 			err := os.WriteFile(filepath.Join(tmpFile), slurp, 0644)
 			if err != nil {
@@ -440,7 +440,7 @@ func deployToPackage(env fatima.FatimaEnv, dep *Deployment) error {
 	// get next revision number
 	revDir := filepath.Join(env.GetFolderGuide().GetFatimaHome(),
 		builder.FatimaFolderApp,
-		domain.FOLDER_APP_REVISION,
+		domain.FolderAppRevision,
 		dep.Process)
 
 	e := os.MkdirAll(revDir, 0755)

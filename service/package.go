@@ -30,11 +30,14 @@ import (
 	"time"
 )
 
-func (service *DomainService) GetPackageReport(loc *time.Location) domain.PackageReport {
+func (service *DomainService) GetPackageReport(loc *time.Location, sortType domain.SortType, order domain.Order) domain.PackageReport {
+	return service.buildPackageReport(loc).Sort(sortType, order)
+}
+
+func (service *DomainService) buildPackageReport(loc *time.Location) domain.PackageReport {
 	if runtime.GOOS == "darwin" {
 		return service.getPackageReportDarwin(loc)
 	}
-
 	return service.getPackageReportLinux(loc)
 }
 
@@ -62,7 +65,7 @@ func (service *DomainService) getPackageReportLinux(loc *time.Location) domain.P
 	report.ProcInfo = make([]domain.ProcessInfo, 0)
 	for _, v := range processList.processes {
 		report.ProcInfo = append(report.ProcInfo, *v)
-		if v.Status == domain.PROC_STATUS_ALIVE {
+		if v.Status == domain.ProcStatusAlive {
 			report.Summary.Alive = report.Summary.Alive + 1
 		} else {
 			report.Summary.Dead = report.Summary.Dead + 1
@@ -103,7 +106,7 @@ func (service *DomainService) getPackageReportDarwin(loc *time.Location) domain.
 	report.ProcInfo = make([]domain.ProcessInfo, 0)
 	for _, v := range processList.processes {
 		report.ProcInfo = append(report.ProcInfo, *v)
-		if v.Status == domain.PROC_STATUS_ALIVE {
+		if v.Status == domain.ProcStatusAlive {
 			report.Summary.Alive = report.Summary.Alive + 1
 		} else {
 			report.Summary.Dead = report.Summary.Dead + 1
@@ -134,14 +137,14 @@ func buildBasicProcessStatus(env fatima.FatimaEnv, pList *ProcessList, item buil
 		pid := GetPid(env, item)
 		if pid != 0 {
 			if inspector.CheckProcessRunningByPid(proc.Name, pid) {
-				proc.Status = domain.PROC_STATUS_ALIVE
+				proc.Status = domain.ProcStatusAlive
 				proc.Pid = strconv.Itoa(pid)
 			}
 		}
 	} else {
 		pid := GetPidByGrep(item.Grep)
 		if pid > 0 {
-			proc.Status = domain.PROC_STATUS_ALIVE
+			proc.Status = domain.ProcStatusAlive
 			proc.Pid = strconv.Itoa(pid)
 		}
 	}
@@ -159,14 +162,14 @@ func buildBasicProcessStatusDarwin(env fatima.FatimaEnv, pList *ProcessList, ind
 		pid := GetPid(env, item)
 		if pid != 0 {
 			if inspector.CheckProcessRunningByPid(proc.Name, pid) {
-				proc.Status = domain.PROC_STATUS_ALIVE
+				proc.Status = domain.ProcStatusAlive
 				proc.Pid = strconv.Itoa(pid)
 			}
 		}
 	} else {
 		pid := GetPidByGrep(item.Grep)
 		if pid > 0 {
-			proc.Status = domain.PROC_STATUS_ALIVE
+			proc.Status = domain.ProcStatusAlive
 			proc.Pid = strconv.Itoa(pid)
 		}
 	}

@@ -53,7 +53,7 @@ func (service *DomainService) RegistJuno() {
 	reg.PackageName = service.fatimaRuntime.GetPackaging().GetName()
 	reg.Endpoint = service.buildEndpointUrl()
 
-	gatewayUri := service.getGatewayAddress(VALUE_JUNO_REGIST_URL)
+	gatewayUri := service.getGatewayAddress(ValueJunoRegisterUrl)
 	log.Info("try to regist. gateway=%s, endpoint=%s", gatewayUri, reg.Endpoint)
 
 	httpClient := web.NewHttpClient("")
@@ -74,7 +74,7 @@ func (service *DomainService) UnregistJuno() {
 	params := make(map[string]string)
 	params["endpoint"] = service.buildEndpointUrl()
 
-	gatewayUri := service.getGatewayAddress(VALUE_JUNO_UNREGIST_URL)
+	gatewayUri := service.getGatewayAddress(ValueJunoUnregisterUrl)
 	log.Info("try to unregist. gateway=%s, endpoint=%s", gatewayUri, params["endpoint"])
 
 	httpClient := web.NewHttpClient("")

@@ -23,32 +23,32 @@ package domain
 import "strings"
 
 const (
-	ROLE_MONITOR = iota
-	ROLE_OPERATOR
-	ROLE_UNKNOWN
+	RoleMonitor = iota
+	RoleOperator
+	RoleUnknown
 )
 
 type Role int
 
 func (r Role) String() string {
 	switch r {
-	case ROLE_MONITOR:
+	case RoleMonitor:
 		return "MONITOR"
-	case ROLE_OPERATOR:
+	case RoleOperator:
 		return "OPERATOR"
 	}
 	return "UNKNOWN"
 }
 
 func (r Role) Acceptable(another Role) bool {
-	if r == ROLE_UNKNOWN || another == ROLE_UNKNOWN {
+	if r == RoleUnknown || another == RoleUnknown {
 		return false
 	}
 
 	switch r {
-	case ROLE_OPERATOR:
+	case RoleOperator:
 		return true
-	case ROLE_MONITOR:
+	case RoleMonitor:
 		return another == r
 	}
 	return false
@@ -57,18 +57,18 @@ func (r Role) Acceptable(another Role) bool {
 func ToRole(value string) Role {
 	switch strings.ToUpper(value) {
 	case "OPERATOR":
-		return ROLE_OPERATOR
+		return RoleOperator
 	case "MONITOR":
-		return ROLE_MONITOR
+		return RoleMonitor
 	}
-	return ROLE_UNKNOWN
+	return RoleUnknown
 }
 
 func ToRoleString(role Role) string {
 	switch role {
-	case ROLE_MONITOR:
+	case RoleMonitor:
 		return "MONITOR"
-	case ROLE_OPERATOR:
+	case RoleOperator:
 		return "OPERATOR"
 	}
 	return "UNKNOWN"

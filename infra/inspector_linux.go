@@ -108,7 +108,7 @@ func (i SystemInspector) MeasureProcessStatus(list []*domain.ProcessInfo, loc *t
 
 	for i := 0; i < len(list); i++ {
 		proc := list[i]
-		if proc.Status != domain.PROC_STATUS_ALIVE {
+		if proc.Status != domain.ProcStatusAlive {
 			continue
 		}
 
@@ -256,7 +256,7 @@ func fillRSS(proc *domain.ProcessInfo) {
 }
 
 func countFD(info *domain.ProcessInfo) {
-	if info.Status != domain.PROC_STATUS_ALIVE {
+	if info.Status != domain.ProcStatusAlive {
 		return
 	}
 
@@ -272,7 +272,7 @@ func countFD(info *domain.ProcessInfo) {
 }
 
 func countThread(info *domain.ProcessInfo) {
-	if info.Status != domain.PROC_STATUS_ALIVE {
+	if info.Status != domain.ProcStatusAlive {
 		return
 	}
 

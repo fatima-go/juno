@@ -163,7 +163,7 @@ func (p *processMonitor) notifyStatusChange(previous, next domain.ProcessInfo) {
 	log.Warn("[%s] status changed %s to %s", next.Name, previous.Status, next.Status)
 	var alarmLvl monitor.AlarmLevel
 	alarmLvl = monitor.AlamLevelMajor
-	if next.Status == domain.PROC_STATUS_ALIVE {
+	if next.Status == domain.ProcStatusAlive {
 		alarmLvl = monitor.AlarmLevelMinor
 	}
 	msg := fmt.Sprintf("프로세스 상태 감지 : [%s]의 상태가 %s로 변경 되었습니다", next.Name, next.Status)
@@ -173,7 +173,7 @@ func (p *processMonitor) notifyStatusChange(previous, next domain.ProcessInfo) {
 	}
 	p.fatimaRuntime.GetSystemNotifyHandler().SendAlarmWithCategory(alarmLvl, monitor.ActionUnknown, msg, AlarmCategoryMonitor)
 
-	if next.Status != domain.PROC_STATUS_ALIVE {
+	if next.Status != domain.ProcStatusAlive {
 		go p.restartProc(next)
 	}
 }
@@ -313,7 +313,7 @@ func (p *processMonitor) GetProcess(name string, loc *time.Location) domain.Proc
 	defer p.monMutex.Unlock()
 	proc := p.procMap[name]
 
-	if proc.Status != domain.PROC_STATUS_ALIVE {
+	if proc.Status != domain.ProcStatusAlive {
 		return proc
 	}
 

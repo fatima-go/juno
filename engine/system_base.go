@@ -99,10 +99,10 @@ func (system *SystemBase) Initialize() bool {
 func (system *SystemBase) checkLogLevelFile() {
 	cfmFolder := filepath.Join(
 		system.fatimaRuntime.GetEnv().GetFolderGuide().GetFatimaHome(),
-		FOLDER_PACKAGE,
-		FOLDER_CFM)
+		FolderPackage,
+		FolderCfm)
 	ensureDirectory(cfmFolder, true)
-	filePath := filepath.Join(cfmFolder, FILE_LOG_LEVEL)
+	filePath := filepath.Join(cfmFolder, FileLogLevel)
 
 	if _, err := os.Stat(filePath); err != nil {
 		if os.IsNotExist(err) {
@@ -227,7 +227,7 @@ func maintainRevision(env fatima.FatimaEnv) {
 	for _, p := range yamlConfig.Processes {
 		revDir := filepath.Join(env.GetFolderGuide().GetFatimaHome(),
 			builder.FatimaFolderApp,
-			FOLDER_APP_REVISION,
+			FolderAppRevision,
 			p.Name)
 		removeOldRevision(revDir)
 	}

@@ -55,9 +55,9 @@ func (service *DomainService) readLogLevels() map[string]string {
 
 	filePath := filepath.Join(
 		service.fatimaRuntime.GetEnv().GetFolderGuide().GetFatimaHome(),
-		domain.FOLDER_PACKAGE,
-		domain.FOLDER_CFM,
-		domain.FILE_LOG_LEVEL)
+		domain.FolderPackage,
+		domain.FolderCfm,
+		domain.FileLogLevel)
 
 	b, err := os.ReadFile(filePath)
 	if err != nil {
@@ -77,9 +77,9 @@ func (service *DomainService) readLogLevels() map[string]string {
 func (service *DomainService) writeLogLevels(loglevels map[string]string) {
 	filePath := filepath.Join(
 		service.fatimaRuntime.GetEnv().GetFolderGuide().GetFatimaHome(),
-		domain.FOLDER_PACKAGE,
-		domain.FOLDER_CFM,
-		domain.FILE_LOG_LEVEL)
+		domain.FolderPackage,
+		domain.FolderCfm,
+		domain.FileLogLevel)
 
 	b, err := json.Marshal(loglevels)
 	if err != nil {

@@ -20,6 +20,41 @@
 
 package domain
 
+import "strings"
+
+const (
+	SortTypeNone = "none"
+	SortTypeName = "name"
+)
+
+type SortType string
+
+func ToSortType(s string) SortType {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "name":
+		return SortTypeName
+	}
+	return SortTypeNone
+}
+
+const (
+	OrderNone = "none"
+	OrderAsc  = "asc"
+	OrderDesc = "desc"
+)
+
+type Order string
+
+func ToOrder(s string) Order {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "asc":
+		return OrderAsc
+	case "desc":
+		return OrderDesc
+	}
+	return OrderNone
+}
+
 const (
 	PropWebServerAddress     = "webserver.address"
 	PropWebServerPort        = "webserver.port"
@@ -33,18 +68,26 @@ const (
 const (
 	HEADER_FATIMA_AUTH_TOKEN = "fatima-auth-token"
 
-	PROC_STATUS_ALIVE = "ALIVE"
-	PROC_STATUS_DEAD  = "DEAD"
+	ProcStatusAlive = "ALIVE"
+	ProcStatusDead  = "DEAD"
 
-	FOLDER_PACKAGE = "package"
-	FOLDER_CFM     = "cfm"
-	FOLDER_HA      = "ha"
-	FILE_HA        = "system.ha"
-	FILE_PS        = "system.ps"
-	FILE_LOG_LEVEL = "loglevels"
+	FolderPackage = "package"
+	FolderCfm     = "cfm"
+	FolderHa      = "ha"
+	FileHa        = "system.ha"
+	FilePs        = "system.ps"
+	FileLogLevel  = "loglevels"
 
-	FOLDER_APP_REVISION = "revision"
+	FolderAppRevision = "revision"
 
-	PACKAGE_DEPLOY_FAR = "far"
-	PACKAGE_DEPLOY_GAR = "gar"
+	PackageDeployFar = "far"
+	PackageDeployGar = "gar"
 )
+
+const (
+	ProcessGroupOpm = "opm"
+)
+
+func IsOpmGroup(opm string) bool {
+	return strings.ToLower(opm) == ProcessGroupOpm
+}

@@ -34,7 +34,7 @@ func (service *DomainService) ValidateToken(token string, role domain.Role) erro
 	httpClient := web.NewHttpClient(token)
 	httpClient.AddHeader(web.HeaderFatimaTokenRole, domain.ToRoleString(role))
 
-	gatewayUri := service.getGatewayAddress(VALUE_TOKEN_VALIDATION_URL)
+	gatewayUri := service.getGatewayAddress(ValueTokenValidationUrl)
 	_, err := httpClient.Post(gatewayUri, nil)
 	return err
 

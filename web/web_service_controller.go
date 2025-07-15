@@ -21,17 +21,17 @@
 package web
 
 import (
-	"github.com/fatima-go/juno/domain"
+	. "github.com/fatima-go/juno/domain"
 	"mime/multipart"
 	"time"
 )
 
 type JunoWebServiceController interface {
 	IsRemoteOperationAllowed(clientIp string) bool
-	ValidateToken(token string, role domain.Role) error
-	GetPackageReport(loc *time.Location) domain.PackageReport
+	ValidateToken(token string, role Role) error
+	GetPackageReport(loc *time.Location, sortType SortType, order Order) PackageReport
 	GetPackageReportForHealthCheck() map[string]string
-	GetLogLevels() domain.LogLevels
+	GetLogLevels() LogLevels
 	ChangeLogLevel(proc string, loglevel string) map[string]interface{}
 	RegistProcess(proc string, groupId string) error
 	UnregistProcess(proc string) error
@@ -44,5 +44,5 @@ type JunoWebServiceController interface {
 	DeployPackage(mr *multipart.Reader) (string, error)
 	ClearIcProcess(all bool, group string, proc string) map[string]interface{}
 	DeploymentHistory(all bool, group string, proc string) map[string]interface{}
-	GetProcessReport(loc *time.Location, proc string) domain.ProcessReport
+	GetProcessReport(loc *time.Location, proc string) ProcessReport
 }

@@ -29,10 +29,10 @@ import (
 
 type WebServiceHandler interface {
 	GetVersion() string
-	HandlePackage(method string, res http.ResponseWriter, req *http.Request)
-	HandleLogLevel(method string, res http.ResponseWriter, req *http.Request)
-	HandleProcess(method string, res http.ResponseWriter, req *http.Request)
-	HandleCron(method string, res http.ResponseWriter, req *http.Request)
+	HandlePackage(command string, res http.ResponseWriter, req *http.Request)
+	HandleLogLevel(command string, res http.ResponseWriter, req *http.Request)
+	HandleProcess(command string, res http.ResponseWriter, req *http.Request)
+	HandleCron(command string, res http.ResponseWriter, req *http.Request)
 	HandleDeploy(res http.ResponseWriter, req *http.Request)
 	HandleClip(res http.ResponseWriter, req *http.Request)
 }
@@ -73,25 +73,25 @@ func (webservice *WebService) GenerateSubRouter(router *mux.Router) {
 		Methods("POST").
 		HeadersRegexp("Content-Type", "application/json*").
 		Subrouter()
-	subrouter.HandleFunc("/{method}/{version}", webservice.Package)
+	subrouter.HandleFunc("/{command}/{version}", webservice.Package)
 
 	subrouter = router.PathPrefix("/"+webService.urlSeed+"/loglevel").
 		Methods("POST").
 		HeadersRegexp("Content-Type", "application/json*").
 		Subrouter()
-	subrouter.HandleFunc("/{method}/{version}", webservice.LogLevel)
+	subrouter.HandleFunc("/{command}/{version}", webservice.LogLevel)
 
 	subrouter = router.PathPrefix("/"+webService.urlSeed+"/process").
 		Methods("POST").
 		HeadersRegexp("Content-Type", "application/json*").
 		Subrouter()
-	subrouter.HandleFunc("/{method}/{version}", webservice.Process)
+	subrouter.HandleFunc("/{command}/{version}", webservice.Process)
 
 	subrouter = router.PathPrefix("/"+webService.urlSeed+"/cron").
 		Methods("POST").
 		HeadersRegexp("Content-Type", "application/json*").
 		Subrouter()
-	subrouter.HandleFunc("/{method}/{version}", webservice.Cron)
+	subrouter.HandleFunc("/{command}/{version}", webservice.Cron)
 
 	subrouter = router.PathPrefix("/"+webService.urlSeed+"/deploy").
 		Methods("POST").
@@ -128,7 +128,7 @@ func writeCORSResponse(res http.ResponseWriter, req *http.Request) {
 }
 
 func (webservice *WebService) inspectUrl(res http.ResponseWriter, req *http.Request) (WebServiceHandler, string) {
-	var method string
+	var command string
 	var ok bool
 
 	vars := mux.Vars(req)
@@ -144,40 +144,40 @@ func (webservice *WebService) inspectUrl(res http.ResponseWriter, req *http.Requ
 		return nil, ""
 	}
 
-	method, ok = vars["method"]
+	command, ok = vars["command"]
 	if !ok {
 		ResponseError(res, req, http.StatusBadRequest, "resouce path not found")
 		return nil, ""
 	}
 
-	return service, method
+	return service, command
 }
 
 func (webservice *WebService) Package(res http.ResponseWriter, req *http.Request) {
-	service, method := webService.inspectUrl(res, req)
-	if len(method) >= 0 {
-		service.HandlePackage(method, res, req)
+	service, command := webService.inspectUrl(res, req)
+	if len(command) >= 0 {
+		service.HandlePackage(command, res, req)
 	}
 }
 
 func (webservice *WebService) LogLevel(res http.ResponseWriter, req *http.Request) {
-	service, method := webService.inspectUrl(res, req)
-	if len(method) >= 0 {
-		service.HandleLogLevel(method, res, req)
+	service, command := webService.inspectUrl(res, req)
+	if len(command) >= 0 {
+		service.HandleLogLevel(command, res, req)
 	}
 }
 
 func (webservice *WebService) Process(res http.ResponseWriter, req *http.Request) {
-	service, method := webService.inspectUrl(res, req)
-	if len(method) >= 0 {
-		service.HandleProcess(method, res, req)
+	service, command := webService.inspectUrl(res, req)
+	if len(command) >= 0 {
+		service.HandleProcess(command, res, req)
 	}
 }
 
 func (webservice *WebService) Cron(res http.ResponseWriter, req *http.Request) {
-	service, method := webService.inspectUrl(res, req)
-	if len(method) >= 0 {
-		service.HandleCron(method, res, req)
+	service, command := webService.inspectUrl(res, req)
+	if len(command) >= 0 {
+		service.HandleCron(command, res, req)
 	}
 }
 

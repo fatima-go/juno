@@ -45,12 +45,12 @@ func (version1 *Version1Handler) GetVersion() string {
 	return "v1"
 }
 
-func (version1 *Version1Handler) HandlePackage(method string, res http.ResponseWriter, req *http.Request) {
-	switch method {
+func (version1 *Version1Handler) HandlePackage(command string, res http.ResponseWriter, req *http.Request) {
+	switch command {
 	case "dis":
-		version1.secureHandle(domain.ROLE_MONITOR, res, req, displayPackage)
+		version1.secureHandle(domain.RoleMonitor, res, req, displayPackage)
 	case "proc":
-		version1.secureHandle(domain.ROLE_MONITOR, res, req, displayProcess)
+		version1.secureHandle(domain.RoleMonitor, res, req, displayProcess)
 	case "health":
 		healthCheck(version1.controller, res, req)
 	default:
@@ -59,46 +59,46 @@ func (version1 *Version1Handler) HandlePackage(method string, res http.ResponseW
 	}
 }
 
-func (version1 *Version1Handler) HandleLogLevel(method string, res http.ResponseWriter, req *http.Request) {
-	switch method {
+func (version1 *Version1Handler) HandleLogLevel(command string, res http.ResponseWriter, req *http.Request) {
+	switch command {
 	case "dis":
-		version1.secureHandle(domain.ROLE_MONITOR, res, req, displayLogLevels)
+		version1.secureHandle(domain.RoleMonitor, res, req, displayLogLevels)
 	case "chg":
-		version1.secureHandle(domain.ROLE_OPERATOR, res, req, changeLogLevel)
+		version1.secureHandle(domain.RoleOperator, res, req, changeLogLevel)
 	default:
 		web.ResponseError(res, req, http.StatusNotFound, "")
 		return
 	}
 }
 
-func (version1 *Version1Handler) HandleProcess(method string, res http.ResponseWriter, req *http.Request) {
-	switch method {
+func (version1 *Version1Handler) HandleProcess(command string, res http.ResponseWriter, req *http.Request) {
+	switch command {
 	case "stop":
-		version1.secureHandle(domain.ROLE_OPERATOR, res, req, stopProcess)
+		version1.secureHandle(domain.RoleOperator, res, req, stopProcess)
 	case "start":
-		version1.secureHandle(domain.ROLE_OPERATOR, res, req, startProcess)
+		version1.secureHandle(domain.RoleOperator, res, req, startProcess)
 	case "regist":
-		version1.secureHandle(domain.ROLE_OPERATOR, res, req, registProcess)
+		version1.secureHandle(domain.RoleOperator, res, req, registProcess)
 	case "unregist":
-		version1.secureHandle(domain.ROLE_OPERATOR, res, req, unregistProcess)
+		version1.secureHandle(domain.RoleOperator, res, req, unregistProcess)
 	case "clric":
-		version1.secureHandle(domain.ROLE_OPERATOR, res, req, clearIcProcess)
+		version1.secureHandle(domain.RoleOperator, res, req, clearIcProcess)
 	case "history":
-		version1.secureHandle(domain.ROLE_MONITOR, res, req, deploymentHistoryProcess)
+		version1.secureHandle(domain.RoleMonitor, res, req, deploymentHistoryProcess)
 	default:
 		web.ResponseError(res, req, http.StatusNotFound, "")
 		return
 	}
 }
 
-func (version1 *Version1Handler) HandleCron(method string, res http.ResponseWriter, req *http.Request) {
-	switch method {
+func (version1 *Version1Handler) HandleCron(command string, res http.ResponseWriter, req *http.Request) {
+	switch command {
 	case "summary":
-		version1.secureHandle(domain.ROLE_OPERATOR, res, req, summaryCronList)
+		version1.secureHandle(domain.RoleOperator, res, req, summaryCronList)
 	case "list":
-		version1.secureHandle(domain.ROLE_OPERATOR, res, req, displayCronCommands)
+		version1.secureHandle(domain.RoleOperator, res, req, displayCronCommands)
 	case "rerun":
-		version1.secureHandle(domain.ROLE_OPERATOR, res, req, rerunCronCommand)
+		version1.secureHandle(domain.RoleOperator, res, req, rerunCronCommand)
 	default:
 		web.ResponseError(res, req, http.StatusNotFound, "")
 		return
@@ -106,7 +106,7 @@ func (version1 *Version1Handler) HandleCron(method string, res http.ResponseWrit
 }
 
 func (version1 *Version1Handler) HandleDeploy(res http.ResponseWriter, req *http.Request) {
-	version1.secureHandle(domain.ROLE_OPERATOR, res, req, deployPackage)
+	version1.secureHandle(domain.RoleOperator, res, req, deployPackage)
 }
 
 func (version1 *Version1Handler) secureHandle(userRole domain.Role, res http.ResponseWriter, req *http.Request, businessHandler HandlerFunc) {
@@ -128,7 +128,7 @@ func (version1 *Version1Handler) secureHandle(userRole domain.Role, res http.Res
 }
 
 func (version1 *Version1Handler) HandleClip(res http.ResponseWriter, req *http.Request) {
-	version1.secureHandle(domain.ROLE_MONITOR, res, req, clip)
+	version1.secureHandle(domain.RoleMonitor, res, req, clip)
 }
 
 func parsingRequest(req *http.Request) (map[string]string, error) {

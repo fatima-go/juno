@@ -23,6 +23,7 @@ package v1
 import (
 	"encoding/json"
 	"github.com/fatima-go/fatima-log"
+	. "github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/web"
 	"io"
 	"net/http"
@@ -30,7 +31,15 @@ import (
 
 func displayPackage(controller web.JunoWebServiceController, res http.ResponseWriter, req *http.Request) {
 	loc := web.GetFatimaClientTimezone(req)
-	report := controller.GetPackageReport(loc)
+	sortType := ToSortType(web.ParsingQueryParam(req, "sortType"))
+	if sortType == SortTypeNone {
+		sortType = SortTypeName // default
+	}
+	order := ToOrder(web.ParsingQueryParam(req, "order"))
+	if order == OrderNone {
+		order = OrderAsc // default
+	}
+	report := controller.GetPackageReport(loc, sortType, order)
 
 	b, err := json.Marshal(report)
 	if err != nil {

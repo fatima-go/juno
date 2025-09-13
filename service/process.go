@@ -25,13 +25,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-core/builder/platform"
-	"github.com/fatima-go/fatima-core/lib"
-	"github.com/fatima-go/fatima-log"
-	"github.com/fatima-go/juno/domain"
-	"github.com/fatima-go/juno/web"
 	"io"
 	"os"
 	"os/exec"
@@ -43,6 +36,14 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-core/builder/platform"
+	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/domain"
+	"github.com/fatima-go/juno/web"
 )
 
 func (service *DomainService) StartProcess(all bool, group string, proc string) map[string]interface{} {

@@ -21,13 +21,14 @@
 package service
 
 import (
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/juno/domain"
 	"runtime"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/juno/domain"
 )
 
 func (service *DomainService) GetPackageReport(loc *time.Location) domain.PackageReport {

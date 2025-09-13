@@ -22,13 +22,6 @@ package engine
 
 import (
 	"encoding/json"
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-core/builder/platform"
-	"github.com/fatima-go/fatima-core/monitor"
-	"github.com/fatima-go/fatima-log"
-	. "github.com/fatima-go/juno/domain"
-	"github.com/fatima-go/juno/service"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -38,6 +31,14 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-core/builder/platform"
+	"github.com/fatima-go/fatima-core/monitor"
+	"github.com/fatima-go/fatima-log"
+	. "github.com/fatima-go/juno/domain"
+	"github.com/fatima-go/juno/service"
 )
 
 func NewSystemBase(fatimaRuntime fatima.FatimaRuntime) *SystemBase {

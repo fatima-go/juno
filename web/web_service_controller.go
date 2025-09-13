@@ -21,9 +21,10 @@
 package web
 
 import (
-	"github.com/fatima-go/juno/domain"
 	"mime/multipart"
 	"time"
+
+	"github.com/fatima-go/juno/domain"
 )
 
 type JunoWebServiceController interface {

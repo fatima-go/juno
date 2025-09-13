@@ -22,10 +22,11 @@ package v1
 
 import (
 	"encoding/json"
-	"github.com/fatima-go/fatima-log"
-	"github.com/fatima-go/juno/web"
 	"io"
 	"net/http"
+
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/web"
 )
 
 func displayPackage(controller web.JunoWebServiceController, res http.ResponseWriter, req *http.Request) {

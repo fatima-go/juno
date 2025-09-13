@@ -23,9 +23,10 @@ package web
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fatima-go/fatima-log"
 	"net/http"
 	"time"
+
+	"github.com/fatima-go/fatima-log"
 )
 
 const (

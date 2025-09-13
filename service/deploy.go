@@ -24,11 +24,6 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-core/lib"
-	"github.com/fatima-go/fatima-log"
-	"github.com/fatima-go/juno/domain"
 	"io"
 	"mime/multipart"
 	"os"
@@ -40,6 +35,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/domain"
 )
 
 const (

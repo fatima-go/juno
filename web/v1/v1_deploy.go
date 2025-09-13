@@ -21,11 +21,12 @@
 package v1
 
 import (
-	"github.com/fatima-go/fatima-log"
-	"github.com/fatima-go/juno/web"
 	"mime"
 	"mime/multipart"
 	"net/http"
+
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/web"
 )
 
 func deployPackage(controller web.JunoWebServiceController, res http.ResponseWriter, req *http.Request) {

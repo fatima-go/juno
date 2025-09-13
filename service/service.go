@@ -22,20 +22,21 @@ package service
 
 import (
 	"fmt"
-	"github.com/fatima-go/fatima-core"
 	"os"
 	"strings"
+
+	"github.com/fatima-go/fatima-core"
 )
 
 const (
-	PROP_WEB_SERVER_ADDRESS     = "webserver.address"
-	PROP_WEB_SERVER_PORT        = "webserver.port"
-	PROP_GATEWAY_SERVER_ADDRESS = "gateway.address"
-	PROP_GATEWAY_SERVER_PORT    = "gateway.port"
-	VALUE_GATEWAY_DEFAULT_PORT  = "9190"
-	VALUE_TOKEN_VALIDATION_URL  = "token/v1"
-	VALUE_JUNO_REGIST_URL       = "juno/regist/v1"
-	VALUE_JUNO_UNREGIST_URL     = "juno/unregist/v1"
+	PropWebServerAddress     = "webserver.address"
+	PropWebServerPort        = "webserver.port"
+	PropGatewayServerAddress = "gateway.address"
+	PropGatewayServerPort    = "gateway.port"
+	ValueGatewayDefaultPort  = "9190"
+	ValueTokenValidationUrl  = "token/v1"
+	ValueJunoRegisterUrl     = "juno/regist/v1"
+	ValueJunoUnregisterUrl   = "juno/unregist/v1"
 )
 
 type DomainService struct {
@@ -52,12 +53,12 @@ func NewDomainService(fatimaRuntime fatima.FatimaRuntime) *DomainService {
 }
 
 func (service *DomainService) getGatewayAddress(suffix string) string {
-	v, ok := service.fatimaRuntime.GetConfig().GetValue(PROP_GATEWAY_SERVER_ADDRESS)
+	v, ok := service.fatimaRuntime.GetConfig().GetValue(PropGatewayServerAddress)
 	if ok {
 		addr := v
-		v, ok = service.fatimaRuntime.GetConfig().GetValue(PROP_GATEWAY_SERVER_PORT)
+		v, ok = service.fatimaRuntime.GetConfig().GetValue(PropGatewayServerPort)
 		if !ok {
-			v = VALUE_GATEWAY_DEFAULT_PORT
+			v = ValueGatewayDefaultPort
 		}
 		return fmt.Sprintf("http://%s:%s/%s", addr, v, suffix)
 	}
@@ -65,7 +66,7 @@ func (service *DomainService) getGatewayAddress(suffix string) string {
 	uri := os.Getenv(fatima.ENV_FATIMA_JUPITER_URI)
 	if len(uri) == 0 {
 		idx := strings.Index(service.ListenAddress, ":")
-		return fmt.Sprintf("http://%s:%s/%s", service.ListenAddress[:idx], VALUE_GATEWAY_DEFAULT_PORT, suffix)
+		return fmt.Sprintf("http://%s:%s/%s", service.ListenAddress[:idx], ValueGatewayDefaultPort, suffix)
 	}
 
 	if strings.HasSuffix(uri, "/") {

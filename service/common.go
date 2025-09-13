@@ -21,13 +21,14 @@
 package service
 
 import (
+	"net"
+	"strconv"
+	"strings"
+
 	"github.com/fatima-go/fatima-core"
 	log "github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/infra"
-	"net"
-	"strconv"
-	"strings"
 )
 
 var inspector infra.SystemInspector

@@ -23,14 +23,16 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-log"
-	"github.com/fatima-go/juno/domain"
-	"github.com/robfig/cron"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
+
+	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-core/ipc"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/domain"
+	"github.com/robfig/cron"
 )
 
 const (
@@ -233,7 +235,48 @@ func removeUnusedCronsFiles(dir string, yamlConfig *builder.YamlFatimaPackageCon
 
 func (service *DomainService) RerunCronCommand(proc string, command string, sample string) map[string]interface{} {
 	log.Info("rerun cron. proc=[%s], job=[%s], args=[%s]", proc, command, sample)
-	file := filepath.Join(service.fatimaRuntime.GetEnv().GetFolderGuide().GetFatimaHome(),
+
+	success, message := requestRerunCronWithIPC(proc, command, sample)
+	if !success {
+		log.Debug("fail to call ipc. message=%s", message)
+		message = requestRerunCronWithFile(proc, command, sample, service.fatimaRuntime.GetEnv().GetFolderGuide().GetFatimaHome())
+	}
+
+	report := make(map[string]interface{})
+	report["package_group"] = service.fatimaRuntime.GetPackaging().GetGroup()
+	report["package_host"] = service.fatimaRuntime.GetPackaging().GetHost()
+	summary := make(map[string]interface{})
+	summary["package_name"] = service.fatimaRuntime.GetPackaging().GetName()
+	summary["message"] = message
+	report["summary"] = summary
+	return report
+}
+
+func requestRerunCronWithIPC(proc string, jobName string, sample string) (bool, string) {
+	if !ipc.IsFatimaIPCAvailable(proc) {
+		return false, "ipc not available"
+	}
+
+	ipcSession, err := ipc.NewFatimaIPCClientSession(proc)
+	if err != nil {
+		return false, fmt.Sprintf("fail to create ipc session : %s", err.Error())
+	}
+	defer ipcSession.Disconnect()
+
+	err = ipcSession.SendCommand(ipc.NewMessageCronExecute(jobName, sample))
+	if err != nil {
+		return false, fmt.Sprintf("fail to send cron execute : %s", err.Error())
+	}
+
+	if len(sample) > 0 {
+		return true, fmt.Sprintf("successfully call rerun. proc=%s, job=%s, args=%s", proc, jobName, sample)
+	} else {
+		return true, fmt.Sprintf("successfully call rerun. proc=%s, job=%s", proc, jobName)
+	}
+}
+
+func requestRerunCronWithFile(proc string, command string, sample string, fatimaHomeDir string) string {
+	file := filepath.Join(fatimaHomeDir,
 		"data",
 		proc,
 		"cron.rerun")
@@ -250,13 +293,5 @@ func (service *DomainService) RerunCronCommand(proc string, command string, samp
 	if err != nil {
 		message = fmt.Sprintf("fail to call job %s for proc %s. err=%s", command, proc, err.Error())
 	}
-
-	report := make(map[string]interface{})
-	report["package_group"] = service.fatimaRuntime.GetPackaging().GetGroup()
-	report["package_host"] = service.fatimaRuntime.GetPackaging().GetHost()
-	summary := make(map[string]interface{})
-	summary["package_name"] = service.fatimaRuntime.GetPackaging().GetName()
-	summary["message"] = message
-	report["summary"] = summary
-	return report
+	return message
 }

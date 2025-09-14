@@ -236,9 +236,10 @@ func removeUnusedCronsFiles(dir string, yamlConfig *builder.YamlFatimaPackageCon
 func (service *DomainService) RerunCronCommand(proc string, command string, sample string) map[string]interface{} {
 	log.Info("rerun cron. proc=[%s], job=[%s], args=[%s]", proc, command, sample)
 
-	success, message := requestRerunCronWithIPC(proc, command, sample)
-	if !success {
-		log.Debug("fail to call ipc. message=%s", message)
+	message := fmt.Sprintf("successfully call rerun. proc=[%s], job=[%s], args=[%s]", proc, command, sample)
+	err := requestRerunCronWithIPC(proc, command, sample)
+	if err != nil {
+		log.Debug("fail to call ipc. message=%s", err.Error())
 		message = requestRerunCronWithFile(proc, command, sample, service.fatimaRuntime.GetEnv().GetFolderGuide().GetFatimaHome())
 	}
 
@@ -252,27 +253,23 @@ func (service *DomainService) RerunCronCommand(proc string, command string, samp
 	return report
 }
 
-func requestRerunCronWithIPC(proc string, jobName string, sample string) (bool, string) {
+func requestRerunCronWithIPC(proc string, jobName string, sample string) error {
 	if !ipc.IsFatimaIPCAvailable(proc) {
-		return false, "ipc not available"
+		return fmt.Errorf("ipc not available")
 	}
 
 	ipcSession, err := ipc.NewFatimaIPCClientSession(proc)
 	if err != nil {
-		return false, fmt.Sprintf("fail to create ipc session : %s", err.Error())
+		return fmt.Errorf("fail to create ipc session : %s", err.Error())
 	}
 	defer ipcSession.Disconnect()
 
 	err = ipcSession.SendCommand(ipc.NewMessageCronExecute(jobName, sample))
 	if err != nil {
-		return false, fmt.Sprintf("fail to send cron execute : %s", err.Error())
+		return fmt.Errorf("fail to send cron execute : %s", err.Error())
 	}
 
-	if len(sample) > 0 {
-		return true, fmt.Sprintf("successfully call rerun. proc=%s, job=%s, args=%s", proc, jobName, sample)
-	} else {
-		return true, fmt.Sprintf("successfully call rerun. proc=%s, job=%s", proc, jobName)
-	}
+	return nil
 }
 
 func requestRerunCronWithFile(proc string, command string, sample string, fatimaHomeDir string) string {

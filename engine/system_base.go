@@ -22,6 +22,8 @@ package engine
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -90,7 +92,7 @@ func (system *SystemBase) Initialize() bool {
 				status syscall.WaitStatus
 				usage  syscall.Rusage
 			)
-			syscall.Wait4(-1, &status, syscall.WNOHANG, &usage)
+			_, _ = syscall.Wait4(-1, &status, syscall.WNOHANG, &usage)
 		}
 	}()
 
@@ -102,7 +104,7 @@ func (system *SystemBase) checkLogLevelFile() {
 		system.fatimaRuntime.GetEnv().GetFolderGuide().GetFatimaHome(),
 		FOLDER_PACKAGE,
 		FOLDER_CFM)
-	ensureDirectory(cfmFolder, true)
+	_ = ensureDirectory(cfmFolder, true)
 	filePath := filepath.Join(cfmFolder, FILE_LOG_LEVEL)
 
 	if _, err := os.Stat(filePath); err != nil {
@@ -311,4 +313,18 @@ func startDeadProcessesSerial(fatimaRuntime fatima.FatimaRuntime) {
 		log.Trace("startDeadProcesses : %s", p.Name)
 		service.ExecuteProgram(fatimaRuntime.GetEnv(), p)
 	}
+}
+
+func ensureDirectory(path string, forceCreate bool) error {
+	if stat, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			if forceCreate {
+				return os.MkdirAll(path, 0755)
+			}
+		} else if !stat.IsDir() {
+			return errors.New(fmt.Sprintf("%s path exist as file", path))
+		}
+	}
+
+	return nil
 }

@@ -36,8 +36,8 @@ github.com/djherbis/atime v1.1.0/go.mod h1:28OF6Y8s3NQWwacXc5eZTsEsiMzp7LF8MbXE+
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385/go.mod h1:0vRUJqYpeSZifjYj7uP3BG/gKcuzL9xWVV/Y+cK33KM=
 github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
-github.com/fatima-go/fatima-core v0.0.1-20250913101913-8ef4c1f61c7a h1:jMJBcaOW8PISSDf/DnIwZ9DesWlGqeb0MBMhiXjGTsU=
-github.com/fatima-go/fatima-core v0.0.1-20250913101913-8ef4c1f61c7a/go.mod h1:yxuCYlu40h0jnmaxbrFQQlWFlW6TageIh4+mrPE//fU=
+github.com/fatima-go/fatima-core v1.2.0 h1:FEfdOTtw/uw+ne37RFscmFpwa2qH+fxATa0m4epMO7Y=
+github.com/fatima-go/fatima-core v1.2.0/go.mod h1:yxuCYlu40h0jnmaxbrFQQlWFlW6TageIh4+mrPE//fU=
 github.com/fatima-go/fatima-log v1.0.1 h1:jSRSr9VfCBFjnuDu3HNY49bH94yM9W7uS4xRZHmveYE=
 github.com/fatima-go/fatima-log v1.0.1/go.mod h1:pvyoTuhR0EUuoLSKPw7q9VdU4ni7paM9IqM0tyb+qQE=
 github.com/flosch/pongo2/v4 v4.0.2/go.mod h1:B5ObFANs/36VwxxlgKpdchIJHMvHB562PW+BWPhwZD8=

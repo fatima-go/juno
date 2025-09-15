@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.5
 
 require (
-	github.com/fatima-go/fatima-core v0.0.1-20250913101913-8ef4c1f61c7a
+	github.com/fatima-go/fatima-core v1.2.0
 	github.com/fatima-go/fatima-log v1.0.1
 	github.com/gorilla/handlers v1.4.0
 	github.com/gorilla/mux v1.6.2

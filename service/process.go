@@ -43,6 +43,7 @@ import (
 	"github.com/fatima-go/fatima-core/lib"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
+	"github.com/fatima-go/juno/service/goaway"
 	"github.com/fatima-go/juno/web"
 )
 
@@ -125,7 +126,7 @@ func startProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) (int, string)
 func (service *DomainService) StopProcess(all bool, group string, proc string) map[string]interface{} {
 	report := make(map[string]interface{})
 
-	log.Info("StopProcess. all=[%b], group=[%s], proc=[%s]", all, group, proc)
+	log.Info("StopProcess. all=[%t], group=[%s], proc=[%s]", all, group, proc)
 
 	target := make([]fatima.FatimaPkgProc, 0)
 	yamlConfig := builder.NewYamlFatimaPackageConfig(service.fatimaRuntime.GetEnv())
@@ -180,6 +181,7 @@ func stopProcess(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) (int, string) 
 
 	pid := GetPid(env, proc)
 	if pid < 1 || !inspector.CheckProcessRunningByPid(proc.GetName(), pid) {
+		log.Info("%s[%d] is not running", proc.GetName(), pid)
 		buffer.WriteString("NOT RUNNING\n")
 		return 0, buffer.String()
 	}
@@ -201,9 +203,13 @@ func executeGoaway(env fatima.FatimaEnv, proc fatima.FatimaPkgProc, pid int) {
 		return
 	}
 
-	if isFatimaOrientProcess(env, proc) {
-		// fatima 프레임워크로 제작된 프로세스일 경우만 프로세스 중지시에 SIGUSR1을 보내도록 한다.
-		sendGoawaySignal(proc, pid)
+	err := goaway.ExecuteGoawayByIPC(proc.GetName())
+	if err != nil {
+		log.Warn("skip goaway by IPC : %s", err.Error())
+		if isFatimaOrientProcess(env, proc) {
+			// 기존 방식대로 SIGUSR1 을 전송
+			sendGoawaySignal(proc, pid)
+		}
 	}
 
 	path := filepath.Join(env.GetFolderGuide().GetFatimaHome(), "app", proc.GetName(), shellGoaway)
@@ -214,7 +220,7 @@ func executeGoaway(env fatima.FatimaEnv, proc fatima.FatimaPkgProc, pid int) {
 	GetProcessMonitor().ProcessStop(proc.GetName())
 	log.Info("executing %s for: %s", shellGoaway, path)
 	cmd := exec.Command("/bin/sh", "-c", path)
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		log.Error("fail to exec goaway[%s] : %s", path, err.Error())
 	}

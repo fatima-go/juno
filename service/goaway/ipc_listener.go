@@ -33,11 +33,13 @@ func (t *defaultGoawayListener) StartSession(ctx SessionContext) {
 }
 
 func (t *defaultGoawayListener) OnReceiveCommand(ctx SessionContext, message Message) {
-	log.Info("[sim] OnReceiveCommand : %s", message)
+	log.Info("[%s] OnReceiveCommand : %s", ctx, message)
 
 	if !message.Is(CommandTransactionVerify) {
 		return
 	}
+
+	defer ctx.Close()
 
 	transactionId := AsString(message.Data.GetValue(DataKeyTransaction))
 	if len(transactionId) == 0 {
@@ -45,11 +47,11 @@ func (t *defaultGoawayListener) OnReceiveCommand(ctx SessionContext, message Mes
 		return
 	}
 
-	err := ctx.SendCommand(NewMessageTransactionVerifyDone(transactionId, true))
+	err := ctx.SendCommand(NewMessageTransactionVerifyDone(transactionId, IsAliveTransaction(transactionId)))
 	if err != nil {
 		log.Warn("fail to send transaction verify done : %s", err.Error())
 	}
-	log.Debug("[%s] sent transaction verify true : %s", ctx, transactionId)
+	log.Info("[%s] sent transaction verify true : %s", ctx, transactionId)
 }
 
 func (t *defaultGoawayListener) OnClose(ctx SessionContext) {

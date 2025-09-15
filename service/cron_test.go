@@ -23,9 +23,10 @@ package service
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/fatima-go/juno/domain"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestRebuildHourlyBatches(t *testing.T) {

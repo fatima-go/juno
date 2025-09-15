@@ -22,8 +22,9 @@ package v1
 
 import (
 	"encoding/json"
-	"github.com/fatima-go/juno/web"
 	"net/http"
+
+	"github.com/fatima-go/juno/web"
 )
 
 type Clipboard struct {

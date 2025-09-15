@@ -22,6 +22,11 @@ package engine
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/fatima-go/fatima-core"
 	"github.com/fatima-go/fatima-log"
 	. "github.com/fatima-go/juno/domain"
@@ -30,10 +35,6 @@ import (
 	"github.com/fatima-go/juno/web/v1"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"net/http"
-	"os"
-	"strings"
-	"time"
 )
 
 func NewWebServer(fatimaRuntime fatima.FatimaRuntime) *JunoHttpServer {

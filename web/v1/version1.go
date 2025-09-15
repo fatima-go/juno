@@ -22,11 +22,12 @@ package v1
 
 import (
 	"encoding/json"
+	"io"
+	"net/http"
+
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/web"
-	"io"
-	"net/http"
 )
 
 type HandlerFunc func(web.JunoWebServiceController, http.ResponseWriter, *http.Request)

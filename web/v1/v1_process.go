@@ -22,9 +22,10 @@ package v1
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/web"
-	"net/http"
 )
 
 func registProcess(controller web.JunoWebServiceController, res http.ResponseWriter, req *http.Request) {

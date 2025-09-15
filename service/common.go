@@ -21,13 +21,16 @@
 package service
 
 import (
-	"github.com/fatima-go/fatima-core"
-	log "github.com/fatima-go/fatima-log"
-	"github.com/fatima-go/juno/domain"
-	"github.com/fatima-go/juno/infra"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/ipc"
+	log "github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/domain"
+	"github.com/fatima-go/juno/infra"
+	"github.com/fatima-go/juno/service/goaway"
 )
 
 var inspector infra.SystemInspector
@@ -49,6 +52,7 @@ func PrepareService(fatimaRuntime fatima.FatimaRuntime) {
 		localIpAddress = v
 	}
 
+	ipc.RegisterIPCSessionListener(goaway.NewGoawayManager())
 	log.Warn("remoteOperationAllow=%s", remoteOperationAllowed)
 	log.Warn("localIpAddress=%s", localIpAddress)
 }

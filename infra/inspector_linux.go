@@ -25,10 +25,6 @@ package infra
 
 import (
 	"fmt"
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/lib"
-	"github.com/fatima-go/juno/domain"
-	"github.com/fatima-go/juno/web"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -36,6 +32,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/juno/domain"
+	"github.com/fatima-go/juno/web"
 )
 
 // http://man7.org/linux/man-pages/man5/proc.5.html

@@ -23,12 +23,13 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-log"
-	"github.com/fatima-go/juno/domain"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/domain"
 )
 
 func (service *DomainService) GetLogLevels() domain.LogLevels {

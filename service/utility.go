@@ -22,10 +22,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-core/lib"
-	"github.com/fatima-go/fatima-log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,6 +29,11 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-log"
 )
 
 func GetPid(env fatima.FatimaEnv, proc fatima.FatimaPkgProc) int {

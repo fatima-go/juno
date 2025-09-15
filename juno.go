@@ -27,7 +27,7 @@ import (
 
 func main() {
 	fatimaRuntime := runtime.GetFatimaRuntime()
-	fatimaRuntime.Regist(engine.NewWebServer(fatimaRuntime))
-	fatimaRuntime.Regist(engine.NewSystemBase(fatimaRuntime))
+	fatimaRuntime.Register(engine.NewWebServer(fatimaRuntime))
+	fatimaRuntime.Register(engine.NewSystemBase(fatimaRuntime))
 	fatimaRuntime.Run()
 }

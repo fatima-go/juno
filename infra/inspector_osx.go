@@ -26,15 +26,16 @@ package infra
 import (
 	"bufio"
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/fatima-go/fatima-core"
 	"github.com/fatima-go/fatima-core/lib"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/web"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type SystemInspector struct {

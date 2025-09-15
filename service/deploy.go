@@ -24,11 +24,6 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-core/lib"
-	"github.com/fatima-go/fatima-log"
-	"github.com/fatima-go/juno/domain"
 	"io"
 	"mime/multipart"
 	"os"
@@ -40,6 +35,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/domain"
 )
 
 const (
@@ -172,7 +173,7 @@ const (
 func stripDeployHistory(config fatima.Config, env fatima.FatimaEnv, dep *Deployment) {
 	keepCount, keepDay := getDeployHistoryKeepConfig(config)
 
-	log.Debug("keepCount : %d, keepDay : %d", keepCount, keepDay)
+	log.Trace("keepCount : %d, keepDay : %d", keepCount, keepDay)
 
 	processHistoryDir := buildHistorySaveDir(env, dep.Process)
 	savedFileTimeMillisList, err := readFilesInDir(processHistoryDir)
@@ -181,18 +182,16 @@ func stripDeployHistory(config fatima.Config, env fatima.FatimaEnv, dep *Deploym
 		return
 	}
 
-	log.Debug("saved deployment count=%d", len(savedFileTimeMillisList))
+	log.Trace("saved deployment count=%d", len(savedFileTimeMillisList))
 
 	if len(savedFileTimeMillisList) < keepCount {
 		return
 	}
 
 	adjustTimemillis := int(time.Now().AddDate(0, 0, -keepDay).UnixMilli())
-	log.Debug("adjustTimemillis : %d", adjustTimemillis)
+	log.Trace("adjustTimemillis : %d", adjustTimemillis)
 
 	for i, fileTimeMillis := range savedFileTimeMillisList {
-		log.Debug("check %d:%d", i, fileTimeMillis)
-
 		if i < keepCount {
 			continue
 		}

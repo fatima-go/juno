@@ -75,55 +75,54 @@ func ExecuteGoawayByIPC(proc string) error {
 }
 
 func handshakeGoawayStart(client FatimaIPCClientSession) error {
-	c1 := make(chan Message, 1)
-	defer close(c1)
-
-	go func() {
-		// receive a response from a client
-		clientMessage, e1 := client.ReadCommand()
-		if e1 != nil {
-			log.Warn("[%s] fail to read command : %s", client, e1.Error())
-			return
-		}
-		c1 <- clientMessage
-	}()
-
-	// determine transaction from response is valid or not
-	select {
-	case clientMessage := <-c1:
-		if !clientMessage.Is(CommandGoawayStart) {
-			return fmt.Errorf("[%s] unexpected message from client : %s", client, clientMessage)
-		}
-		log.Info("[%s] goaway start received", client)
-	case <-time.After(goawayStartTimeoutDuration):
-		return fmt.Errorf("[%s] timeout to receive goaway start", client)
-	}
-	return nil
+	return handshakeGoawayMessage(client, CommandGoawayStart, goawayStartTimeoutDuration, "goaway start")
 }
 
 func handshakeGoawayDone(client FatimaIPCClientSession) error {
+	return handshakeGoawayMessage(client, CommandGoawayDone, goawayTimeoutDuration, "goaway done")
+}
+
+// handshakeGoawayMessage는 goaway 관련 메시지 핸드셰이크의 공통 로직을 처리합니다
+func handshakeGoawayMessage(client FatimaIPCClientSession, expectedCommand string, timeout time.Duration, messageType string) error {
 	c1 := make(chan Message, 1)
-	defer close(c1)
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// 채널이 닫힌 후 메시지를 보내려 할 때 발생하는 panic을 복구
+				log.Warn("[%s] channel closed while trying to send message", client)
+			}
+		}()
+
 		// receive a response from a client
-		clientMessage, e1 := client.ReadCommand()
-		if e1 != nil {
-			log.Warn("[%s] fail to read command : %s", client, e1.Error())
+		clientMessage, err := client.ReadCommand()
+		if err != nil {
+			log.Warn("[%s] fail to read command : %s", client, err.Error())
 			return
 		}
-		c1 <- clientMessage
+
+		// 채널이 닫혔는지 확인하고 안전하게 메시지 전송
+		select {
+		case c1 <- clientMessage:
+			// 성공적으로 메시지 전송
+		default:
+			// 채널이 닫혔거나 버퍼가 가득 참
+			log.Warn("[%s] unable to send message to channel", client)
+		}
 	}()
 
 	// determine transaction from response is valid or not
 	select {
 	case clientMessage := <-c1:
-		if !clientMessage.Is(CommandGoawayDone) {
-			return fmt.Errorf("[%s] unexpected message from client : %s", client, clientMessage)
+		close(c1) // 메시지를 받은 후 채널 닫기
+		if !clientMessage.Is(expectedCommand) {
+			return fmt.Errorf("[%s] unexpected message from client : %s (expect : %s)",
+				client, clientMessage, expectedCommand)
 		}
-		log.Info("[%s] goaway done received", client)
-	case <-time.After(goawayTimeoutDuration):
-		return fmt.Errorf("[%s] timeout to receive goaway done", client)
+		log.Info("[%s] %s received", client, messageType)
+	case <-time.After(timeout):
+		close(c1) // 타임아웃 시 채널 닫기
+		return fmt.Errorf("[%s] timeout to receive %s", client, messageType)
 	}
 	return nil
 }

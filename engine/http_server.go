@@ -21,10 +21,12 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fatima-go/fatima-core"
@@ -36,6 +38,8 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
+
+const httpShutdownTimeout = 3 * time.Second
 
 func NewWebServer(fatimaRuntime fatima.FatimaRuntime) *JunoHttpServer {
 	server := new(JunoHttpServer)
@@ -50,6 +54,8 @@ type JunoHttpServer struct {
 	router        *mux.Router
 	loggingRouter http.Handler
 	listenAddress string
+	httpServer    *http.Server
+	shutdownOnce  sync.Once
 }
 
 func createDomainService(fatimaRuntime fatima.FatimaRuntime) *service.DomainService {
@@ -87,6 +93,13 @@ func (server *JunoHttpServer) Initialize() bool {
 
 	server.loggingRouter = handlers.LoggingHandler(server, server.router)
 
+	server.httpServer = &http.Server{
+		Handler:      server.loggingRouter,
+		Addr:         server.listenAddress,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
 	return true
 }
 
@@ -113,9 +126,32 @@ func (server *JunoHttpServer) Bootup() {
 	log.Info("Juno HttpServer Bootup()")
 }
 
+func (server *JunoHttpServer) Goaway() {
+	log.Info("Juno HttpServer Goaway()")
+	server.gracefulShutdown()
+}
+
 func (server *JunoHttpServer) Shutdown() {
-	server.domainService.UnregistJuno()
 	log.Info("Juno HttpServer Shutdown()")
+	server.gracefulShutdown()
+}
+
+// gracefulShutdown deregisters from the gateway (stop ingress) and then drains the
+// HTTP server within httpShutdownTimeout. Idempotent so it can be driven from both
+// Goaway (graceful window) and Shutdown (final teardown) without running twice.
+func (server *JunoHttpServer) gracefulShutdown() {
+	server.shutdownOnce.Do(func() {
+		// stop ingress first: deregister from gateway so no new requests are routed here
+		server.domainService.UnregistJuno()
+		if server.httpServer == nil {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
+		defer cancel()
+		if err := server.httpServer.Shutdown(ctx); err != nil {
+			log.Warn("Juno HttpServer graceful shutdown error : %s", err.Error())
+		}
+	})
 }
 
 func (server *JunoHttpServer) GetType() fatima.FatimaComponentType {
@@ -125,20 +161,13 @@ func (server *JunoHttpServer) GetType() fatima.FatimaComponentType {
 func (server *JunoHttpServer) StartListening() {
 	log.Info("called StartListening()")
 
-	srv := &http.Server{
-		Handler:      server.loggingRouter,
-		Addr:         server.listenAddress,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
 	log.Info("start web guard listening...")
 	go func() {
 		server.domainService.RegistJuno()
 	}()
 
-	err := srv.ListenAndServe()
-	if err != nil {
+	err := server.httpServer.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
 		log.Error("fail to start web guard : %s", err.Error())
 		server.fatimaRuntime.Stop()
 	}

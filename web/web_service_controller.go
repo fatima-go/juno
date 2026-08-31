@@ -22,6 +22,7 @@ package web
 
 import (
 	"mime/multipart"
+	"os"
 	"time"
 
 	"github.com/fatima-go/juno/domain"
@@ -37,6 +38,8 @@ type JunoWebServiceController interface {
 	RegistProcess(proc string, groupId string) error
 	UnregistProcess(proc string) error
 	GetClipboard() string
+	OpenClipBinaryFile(name string) (*os.File, os.FileInfo, error)
+	GetClipBinaryWriteTimeout() time.Duration
 	StopProcess(all bool, group string, proc string) map[string]interface{}
 	StartProcess(all bool, group string, proc string) map[string]interface{}
 	ListCronCommand() map[string]interface{}

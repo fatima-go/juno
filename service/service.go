@@ -40,14 +40,16 @@ const (
 )
 
 type DomainService struct {
-	fatimaRuntime fatima.FatimaRuntime
-	ListenAddress string
-	UrlSeed       string
+	fatimaRuntime    fatima.FatimaRuntime
+	clipBinaryConfig clipBinaryConfig
+	ListenAddress    string
+	UrlSeed          string
 	//ValidateToken(token string, role domain.Role) error
 }
 
 func NewDomainService(fatimaRuntime fatima.FatimaRuntime) *DomainService {
 	service := DomainService{fatimaRuntime: fatimaRuntime}
+	service.clipBinaryConfig = loadClipBinaryConfig(fatimaRuntime.GetConfig())
 
 	return &service
 }

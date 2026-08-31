@@ -114,7 +114,7 @@ func (handler *WebService) ServeHTTP(res http.ResponseWriter, req *http.Request)
 
 // var AccessControlAllowHeaderList = "Content-Type, Access-Control-Allow-Headers, Authorization, Fatima-Auth-Token, Fatima-Timezone"
 var AccessControlAllowHeaderList = "Content-Type, Fatima-Auth-Token, Fatima-Timezone, Fatima-Response-Time"
-var AccessControlExposeHeaderList = "Content-Type, Fatima-Timezone, Fatima-Response-Time"
+var AccessControlExposeHeaderList = "Content-Type, Content-Disposition, Content-Length, Fatima-Timezone, Fatima-Response-Time"
 
 func writeCORSResponse(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set(HeaderAccessControlAllowOrigin, "*")

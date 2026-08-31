@@ -23,6 +23,8 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
 	"net/http"
 	"time"
 
@@ -42,11 +44,13 @@ const (
 	HeaderFatimaTimezone             = "Fatima-Timezone"
 	HeaderFatimaResTime              = "Fatima-Response-Time"
 	HeaderFatimaTokenRole            = "Fatima-Token-Role"
+	HeaderContentDisposition         = "Content-Disposition"
 
-	HeaderValueUserAgent      = "fatima-application-juno"
-	HeaderValueCharset        = "UTF-8"
-	HeaderValueContentType    = "application/json; charset=utf-8"
-	HeaderValueFatimaTimezone = "Asia/Seoul"
+	HeaderValueUserAgent         = "fatima-application-juno"
+	HeaderValueCharset           = "UTF-8"
+	HeaderValueContentType       = "application/json; charset=utf-8"
+	HeaderValueBinaryContentType = "application/octet-stream"
+	HeaderValueFatimaTimezone    = "Asia/Seoul"
 
 	TIME_YYYYMMDDHHMMSS = "2006-01-02 15:04:05"
 )
@@ -79,12 +83,10 @@ func GetFatimaClientTimezone(req *http.Request) *time.Location {
 	return time.UTC
 }
 
-func writeResponseHeader(res http.ResponseWriter, req *http.Request, httpStatusCode int) {
+func writeCommonResponseHeader(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set(HeaderAccessControlAllowOrigin, "*")
 	res.Header().Set(HeaderAccessControlAllowHeaders, AccessControlAllowHeaderList)
 	res.Header().Set(HeaderAccessControlExposeHeaders, AccessControlExposeHeaderList)
-	res.Header().Set(HeaderContentType, HeaderValueContentType)
-	res.Header().Set(HeaderCharset, HeaderValueCharset)
 	res.Header().Set(HeaderUserAgent, HeaderValueUserAgent)
 	if tz, ok := req.Header[HeaderFatimaTimezone]; ok {
 		if loc, err := time.LoadLocation(tz[0]); err == nil {
@@ -92,6 +94,12 @@ func writeResponseHeader(res http.ResponseWriter, req *http.Request, httpStatusC
 			res.Header().Set(HeaderFatimaResTime, time.Now().In(loc).Format(TIME_YYYYMMDDHHMMSS))
 		}
 	}
+}
+
+func writeResponseHeader(res http.ResponseWriter, req *http.Request, httpStatusCode int) {
+	writeCommonResponseHeader(res, req)
+	res.Header().Set(HeaderContentType, HeaderValueContentType)
+	res.Header().Set(HeaderCharset, HeaderValueCharset)
 	res.WriteHeader(httpStatusCode)
 }
 
@@ -126,6 +134,13 @@ func ResponseSuccess(res http.ResponseWriter, req *http.Request, message string)
 	if len(message) > 0 {
 		fmt.Fprintln(res, message)
 	}
+}
+
+func ResponseBinary(res http.ResponseWriter, req *http.Request, filename string, modTime time.Time, content io.ReadSeeker) {
+	writeCommonResponseHeader(res, req)
+	res.Header().Set(HeaderContentType, HeaderValueBinaryContentType)
+	res.Header().Set(HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
+	http.ServeContent(res, req, filename, modTime, content)
 }
 
 func ResponseError(res http.ResponseWriter, req *http.Request, httpStatusCode int, message string) {

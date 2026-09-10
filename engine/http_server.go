@@ -30,13 +30,18 @@ import (
 	"time"
 
 	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/opm/api"
+	"github.com/fatima-go/fatima-core/opm/transport"
 	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/juno/control"
+	"github.com/fatima-go/juno/deployment"
 	. "github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/service"
 	"github.com/fatima-go/juno/web"
 	"github.com/fatima-go/juno/web/v1"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 )
 
 const httpShutdownTimeout = 3 * time.Second
@@ -48,14 +53,17 @@ func NewWebServer(fatimaRuntime fatima.FatimaRuntime) *JunoHttpServer {
 }
 
 type JunoHttpServer struct {
-	fatimaRuntime fatima.FatimaRuntime
-	webService    *web.WebService
-	domainService *service.DomainService
-	router        *mux.Router
-	loggingRouter http.Handler
-	listenAddress string
-	httpServer    *http.Server
-	shutdownOnce  sync.Once
+	fatimaRuntime    fatima.FatimaRuntime
+	webService       *web.WebService
+	domainService    *service.DomainService
+	router           *mux.Router
+	loggingRouter    http.Handler
+	listenAddress    string
+	httpServer       *http.Server
+	transportServer  *transport.Server
+	deploymentServer *deployment.Server
+	controlServer    *control.Server
+	shutdownOnce     sync.Once
 }
 
 func createDomainService(fatimaRuntime fatima.FatimaRuntime) *service.DomainService {
@@ -99,6 +107,26 @@ func (server *JunoHttpServer) Initialize() bool {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+	var err error
+	server.deploymentServer, err = server.domainService.NewDeploymentV2()
+	g := grpc.NewServer()
+	caps := &api.Capabilities{Server: "juno", ApiVersion: 2, Features: []string{"unavailable"}}
+	if err != nil {
+		log.Error("deployment v2 unavailable; legacy HTTP remains active: %s", err.Error())
+	} else {
+		server.deploymentServer.Register(g)
+		caps = server.deploymentServer.Capabilities()
+	}
+	server.controlServer, err = server.domainService.NewControlV2()
+	if err != nil {
+		log.Error("operating APIs unavailable: %s", err.Error())
+		caps.Features = append(caps.Features, "control_unavailable")
+	} else {
+		server.controlServer.Register(g)
+		caps.PackageId = server.controlServer.PackageID
+		caps.Features = append(caps.Features, server.controlServer.Features()...)
+	}
+	server.transportServer = transport.NewServer(server.httpServer, g, caps)
 
 	return true
 }
@@ -148,7 +176,13 @@ func (server *JunoHttpServer) gracefulShutdown() {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 		defer cancel()
-		if err := server.httpServer.Shutdown(ctx); err != nil {
+		if server.deploymentServer != nil {
+			server.deploymentServer.Close()
+		}
+		if server.controlServer != nil {
+			server.controlServer.Close()
+		}
+		if err := server.transportServer.Shutdown(ctx); err != nil {
 			log.Warn("Juno HttpServer graceful shutdown error : %s", err.Error())
 		}
 	})
@@ -166,7 +200,7 @@ func (server *JunoHttpServer) StartListening() {
 		server.domainService.RegistJuno()
 	}()
 
-	err := server.httpServer.ListenAndServe()
+	err := server.transportServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Error("fail to start web guard : %s", err.Error())
 		server.fatimaRuntime.Stop()

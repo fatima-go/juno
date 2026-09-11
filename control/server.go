@@ -24,6 +24,8 @@ type Server struct {
 	RegistryCatalog func(*api.RegistryQuery) (*api.RegistryCatalog, error)
 	RegistryPreview func(*api.RegistryRequest) (*api.RegistryPlan, error)
 	RegistryApply   func(context.Context, *api.RegistryRequest, operations.Emit) error
+	LogLevels       func() (*api.LogLevelCatalog, error)
+	SetLogLevel     func(process, level string) (*api.LogLevelEntry, error)
 }
 
 func New(root, packageID string, auth func(context.Context, string) error) (*Server, error) {
@@ -37,9 +39,10 @@ func (s *Server) Register(g *grpc.Server) {
 	api.RegisterCronControlServer(g, s)
 	api.RegisterProcessControlServer(g, &processAPI{s: s})
 	api.RegisterProcessRegistryServer(g, &registryAPI{s: s})
+	api.RegisterLogLevelControlServer(g, &logLevelAPI{s: s})
 }
 func (s *Server) Features() []string {
-	return []string{"rocron", "rostop", "rostart", "rodis", "roproc"}
+	return []string{"rocron", "rostop", "rostart", "rodis", "roproc", "rolog"}
 }
 func (s *Server) Close() { s.Manager.Close() }
 func (s *Server) List(ctx context.Context, _ *api.Empty) (*api.CronCatalog, error) {

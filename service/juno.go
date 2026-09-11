@@ -22,6 +22,7 @@ package service
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -37,8 +38,28 @@ const (
 
 var junoRegisted = false
 
+// advertisedEndpoint keeps the first computed endpoint so unregistration uses
+// the same address as registration even if the default IP changes meanwhile.
+var advertisedEndpoint string
+
 func (service *DomainService) buildEndpointUrl() string {
-	return fmt.Sprintf("http://%s/%s/", service.ListenAddress, service.UrlSeed)
+	if advertisedEndpoint == "" {
+		advertisedEndpoint = fmt.Sprintf("http://%s/%s/", advertiseAddress(service.ListenAddress, getDefaultIpAddress()), service.UrlSeed)
+	}
+	return advertisedEndpoint
+}
+
+// advertiseAddress replaces a wildcard listen host (empty, 0.0.0.0, ::) with
+// defaultIp because jupiter and clients cannot connect to a wildcard address.
+func advertiseAddress(listen, defaultIp string) string {
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		return listen
+	}
+	if host == "" || net.ParseIP(host).IsUnspecified() {
+		host = defaultIp
+	}
+	return net.JoinHostPort(host, port)
 }
 
 func (service *DomainService) RegistJuno() {

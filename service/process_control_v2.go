@@ -129,10 +129,12 @@ func (s *DomainService) stopObservedV2(ctx context.Context, p fatima.FatimaPkgPr
 	env := s.fatimaRuntime.GetEnv()
 	name := p.GetName()
 	pid := GetPid(env, p)
-	GetProcessMonitor().ProcessStop(name)
 	if pid < 2 || !runningV2(name, pid) {
+		// Marking the monitor here would silence later status alarms for a
+		// process this request never stopped.
 		return emit(name+"/shutdown", "SUCCEEDED", "Already stopped", 0, 0)
 	}
+	GetProcessMonitor().ProcessStop(name)
 	report := func(stage, state, msg string, current, total int64) error {
 		return emit(name+"/"+stage, state, msg, current, total)
 	}

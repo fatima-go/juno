@@ -426,30 +426,19 @@ func (service *DomainService) DeploymentHistory(all bool, group string, proc str
 		return report
 	}
 
-	processHistoryDir := buildHistorySaveDir(service.fatimaRuntime.GetEnv(), proc)
-	savedFileTimeMillisList, err := readFilesInDir(processHistoryDir)
-	if err != nil {
-		report["system"] = web.SystemResponse{Code: 700, Message: "not found deployment history"}
-		return report
+	var names []string
+	for _, p := range target {
+		if p != nil {
+			names = append(names, p.GetName())
+		}
 	}
+	history := legacyHistory(filepath.Join(service.fatimaRuntime.GetEnv().GetFolderGuide().GetDataFolder(), deploymentHistoryDataDir), names)
 
 	report["package_group"] = service.fatimaRuntime.GetPackaging().GetGroup()
 	report["package_host"] = service.fatimaRuntime.GetPackaging().GetHost()
 	summary := make(map[string]interface{})
 	summary["package_name"] = service.fatimaRuntime.GetPackaging().GetName()
-
-	history := make([]map[string]interface{}, 0)
-	for _, deploymentFile := range savedFileTimeMillisList {
-		m, e := readFileAsMap(fmt.Sprintf("%s/%d", processHistoryDir, deploymentFile))
-		if e != nil {
-			log.Warn("readFileAsMap : %s", e.Error())
-			continue
-		}
-		m["deployment_time"] = deploymentFile
-		history = append(history, m)
-	}
-
-	summary["message"] = fmt.Sprintf("total %d process history found", len(savedFileTimeMillisList))
+	summary["message"] = fmt.Sprintf("total %d process history found", len(history))
 	summary["history"] = history
 	report["summary"] = summary
 	return report

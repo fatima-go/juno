@@ -51,6 +51,7 @@ func (s *DomainService) NewControlV2() (*control.Server, error) {
 	c.RegistryApply = s.registryApplyV2
 	c.LogLevels = s.logLevelCatalogV2
 	c.SetLogLevel = s.setLogLevelV2
+	c.History = s.deploymentHistoryV2
 	return c, nil
 }
 func (s *DomainService) listCronV2() (result *api.CronCatalog, err error) {

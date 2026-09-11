@@ -294,6 +294,9 @@ func (service *DomainService) executeDeploymentV2(ctx context.Context, spec *api
 		if err = emit("history", "WARNING", e.Error(), 0, 0); err != nil {
 			return
 		}
+	} else {
+		// apply the same keep count/day rule as the legacy deploy path
+		go stripDeployHistory(service.fatimaRuntime.GetConfig(), env, dep)
 	}
 	GetProcessMonitor().ResetICount(spec.Process)
 	success = true

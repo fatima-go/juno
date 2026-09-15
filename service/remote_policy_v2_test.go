@@ -59,7 +59,7 @@ func (*policyIdentity) Validate(ctx context.Context, q *api.ValidateRequest) (*a
 		return nil, status.Error(codes.Unauthenticated, "missing token")
 	}
 	if q.OperationId != "" {
-		if token != "ticket" || q.PackageId != "host:package" || q.OperationId != "op" || (q.Sha256 != "" && q.Sha256 != strings.Repeat("a", 64)) {
+		if token != "ticket" || q.PackageId != "host:package" || (q.OperationId != "op" && q.OperationId != "cancel-op") || (q.Sha256 != "" && q.Sha256 != strings.Repeat("a", 64)) {
 			return nil, status.Error(codes.PermissionDenied, "invalid ticket scope")
 		}
 	} else if token != "operator" && !(token == "monitor" && q.Role == "MONITOR") {
@@ -136,6 +136,7 @@ func TestV2RemotePolicyWiring(t *testing.T) {
 		"LogLevelControl/List":        {&api.Empty{}, codes.Unavailable, false, false, false},
 		"LogLevelControl/Set":         {&api.LogLevelRequest{}, codes.InvalidArgument, false, true, false},
 		"DeploymentHistory/List":      {&api.HistoryQuery{}, codes.Unavailable, false, false, false},
+		"PackageDeployment/Cancel":    {&api.OperationSpec{Id: "cancel-op", ArtifactId: "artifact", Process: "process", PackageId: "host:package", Size: 1, Sha256: strings.Repeat("a", 64)}, codes.OK, false, true, true},
 		"PackageDeployment/Stage":     {&api.StageChunk{Spec: &api.OperationSpec{Id: "op", ArtifactId: "artifact", Process: "process", PackageId: "host:package", Size: 1, Sha256: strings.Repeat("a", 64)}}, codes.FailedPrecondition, false, true, true},
 		"PackageDeployment/Start":     {&api.OperationQuery{Id: "op"}, codes.NotFound, false, true, true},
 		"PackageDeployment/Get":       {&api.OperationQuery{Id: "op"}, codes.NotFound, false, true, true},

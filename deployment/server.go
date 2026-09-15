@@ -89,7 +89,7 @@ func New(root, packageID, platform string, auth Authorize, execute Executor) (*S
 	return s, nil
 }
 func (s *Server) Capabilities() *api.Capabilities {
-	return &api.Capabilities{Server: "juno", ApiVersion: 2, Features: []string{"deployment", "progress", "resume"}, PackageId: s.PackageID, Platform: s.Platform}
+	return &api.Capabilities{Server: "juno", ApiVersion: 2, Features: []string{"deployment", "progress", "resume", "deployment_cancel"}, PackageId: s.PackageID, Platform: s.Platform}
 }
 func (s *Server) Register(g *grpc.Server) { api.RegisterPackageDeploymentServer(g, s) }
 func (s *Server) Close() {

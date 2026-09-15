@@ -3,7 +3,7 @@ module github.com/fatima-go/juno
 go 1.25.0
 
 require (
-	github.com/fatima-go/fatima-core v1.3.6
+	github.com/fatima-go/fatima-core v1.3.7
 	github.com/fatima-go/fatima-log v1.0.2
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
@@ -26,5 +26,3 @@ require (
 	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260518230821-037a81a441c8 // indirect
 )
-
-replace github.com/fatima-go/fatima-core => ../fatima-core

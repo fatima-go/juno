@@ -13,28 +13,32 @@ import (
 
 type Server struct {
 	api.UnimplementedCronControlServer
-	Manager         *operations.Manager
-	PackageID       string
-	Authorize       func(context.Context, string) error
-	ListJobs        func() (*api.CronCatalog, error)
-	RunJob          func(context.Context, *api.CronRequest) (string, error)
-	Processes       func(*api.ProcessQuery) (*api.ProcessCatalog, error)
-	StopProcesses   func(context.Context, []string, operations.Emit) error
-	StartProcesses  func(context.Context, []string, operations.Emit) error
-	RegistryCatalog func(*api.RegistryQuery) (*api.RegistryCatalog, error)
-	RegistryPreview func(*api.RegistryRequest) (*api.RegistryPlan, error)
-	RegistryApply   func(context.Context, *api.RegistryRequest, operations.Emit) error
-	LogLevels       func() (*api.LogLevelCatalog, error)
-	SetLogLevel     func(process, level string) (*api.LogLevelEntry, error)
-	History         func(*api.HistoryQuery) (*api.HistoryList, error)
+	Manager              *operations.Manager
+	PackageID            string
+	Authorize            func(context.Context, string) error
+	CheckRemoteOperation func(context.Context) error
+	ListJobs             func() (*api.CronCatalog, error)
+	RunJob               func(context.Context, *api.CronRequest) (string, error)
+	Processes            func(*api.ProcessQuery) (*api.ProcessCatalog, error)
+	StopProcesses        func(context.Context, []string, operations.Emit) error
+	StartProcesses       func(context.Context, []string, operations.Emit) error
+	RegistryCatalog      func(*api.RegistryQuery) (*api.RegistryCatalog, error)
+	RegistryPreview      func(*api.RegistryRequest) (*api.RegistryPlan, error)
+	RegistryApply        func(context.Context, *api.RegistryRequest, operations.Emit) error
+	LogLevels            func() (*api.LogLevelCatalog, error)
+	SetLogLevel          func(process, level string) (*api.LogLevelEntry, error)
+	History              func(*api.HistoryQuery) (*api.HistoryList, error)
 }
 
-func New(root, packageID string, auth func(context.Context, string) error) (*Server, error) {
+func New(root, packageID string, auth func(context.Context, string) error, checkRemote func(context.Context) error) (*Server, error) {
+	if auth == nil || checkRemote == nil {
+		return nil, fmt.Errorf("authentication and remote operation checks are required")
+	}
 	m, err := operations.New(root, packageID)
 	if err != nil {
 		return nil, err
 	}
-	return &Server{Manager: m, PackageID: packageID, Authorize: auth}, nil
+	return &Server{Manager: m, PackageID: packageID, Authorize: auth, CheckRemoteOperation: checkRemote}, nil
 }
 func (s *Server) Register(g *grpc.Server) {
 	api.RegisterCronControlServer(g, s)

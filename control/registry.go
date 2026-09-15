@@ -39,6 +39,9 @@ func (a *registryAPI) Apply(ctx context.Context, q *api.RegistryRequest) (*api.C
 	if err := a.authorize(ctx, q.PackageId, "OPERATOR"); err != nil {
 		return nil, err
 	}
+	if err := a.s.CheckRemoteOperation(ctx); err != nil {
+		return nil, err
+	}
 	if q.ExpectedRevision == "" {
 		return nil, status.Error(codes.InvalidArgument, "preview revision is required")
 	}

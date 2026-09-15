@@ -12,4 +12,4 @@ gateway.address  | string | 0.0.0.0 | jupiter ip address
 gateway.port | int    | 9190    | jupiter listen port
 webserver.address | string | 0.0.0.0 | juno listen ip address
 webserver.port | int    | 9180    | juno listen port
-remote.operation.allow | bool   | true    | remote operation(e.g roproc, rostop, ...) allow or not
+remote.operation.allow | bool   | true    | Allow remote process registration/removal (`roproc`) and start/stop (`rostart`, `rostop`). Does not restrict deployment, queries, cron, or log-level operations; API authentication and roles still apply.

@@ -22,9 +22,6 @@ import (
 	"github.com/fatima-go/juno/deployment"
 	"github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/service/goaway"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
 )
 
 // NewDeploymentV2 is an additive adapter. The old DeployPackage, start/stop and
@@ -37,10 +34,6 @@ func (service *DomainService) NewDeploymentV2() (*deployment.Server, error) {
 		root = v
 	}
 	auth := func(ctx context.Context, q *api.ValidateRequest) error {
-		p, ok := peer.FromContext(ctx)
-		if !ok || !service.IsRemoteOperationAllowed(p.Addr.String()) {
-			return status.Error(codes.PermissionDenied, "remote operation is disabled")
-		}
 		conn, e := transport.Dial(service.getGatewayAddress(""))
 		if e != nil {
 			return e

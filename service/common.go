@@ -53,7 +53,7 @@ func PrepareService(fatimaRuntime fatima.FatimaRuntime) {
 	}
 
 	ipc.RegisterIPCSessionListener(goaway.NewGoawayManager())
-	log.Warn("remoteOperationAllow=%s", remoteOperationAllowed)
+	log.Warn("remoteOperationAllow=%t", remoteOperationAllowed)
 	log.Warn("localIpAddress=%s", localIpAddress)
 }
 
@@ -66,7 +66,7 @@ const (
 
 func (service *DomainService) IsRemoteOperationAllowed(clientIp string) bool {
 	if log.IsTraceEnabled() {
-		log.Trace("IsRemoteOperationAllowed. remoteOperationAllowed=%s, clientIp=[%s], localIpAddress=[%s]",
+		log.Trace("IsRemoteOperationAllowed. remoteOperationAllowed=%t, clientIp=[%s], localIpAddress=[%s]",
 			remoteOperationAllowed, clientIp, localIpAddress)
 	}
 

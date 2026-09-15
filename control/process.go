@@ -54,6 +54,9 @@ func (a *processAPI) Stop(ctx context.Context, q *api.ProcessRequest) (*api.Cont
 	if err := a.s.Authorize(ctx, "OPERATOR"); err != nil {
 		return nil, err
 	}
+	if err := a.s.CheckRemoteOperation(ctx); err != nil {
+		return nil, err
+	}
 	if err := validateProcesses(q); err != nil {
 		return nil, err
 	}
@@ -77,6 +80,9 @@ func validateProcesses(q *api.ProcessRequest) error {
 }
 func (a *processAPI) Start(ctx context.Context, q *api.ProcessRequest) (*api.ControlOperation, error) {
 	if err := a.s.Authorize(ctx, "OPERATOR"); err != nil {
+		return nil, err
+	}
+	if err := a.s.CheckRemoteOperation(ctx); err != nil {
 		return nil, err
 	}
 	if err := validateProcesses(q); err != nil {

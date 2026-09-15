@@ -22,10 +22,6 @@ import (
 func (s *DomainService) NewControlV2() (*control.Server, error) {
 	pack := s.fatimaRuntime.GetPackaging()
 	auth := func(ctx context.Context, role string) error {
-		p, ok := peer.FromContext(ctx)
-		if !ok || !s.IsRemoteOperationAllowed(p.Addr.String()) {
-			return status.Error(codes.PermissionDenied, "remote operation is disabled")
-		}
 		c, err := transport.Dial(s.getGatewayAddress(""))
 		if err != nil {
 			return err
@@ -37,7 +33,7 @@ func (s *DomainService) NewControlV2() (*control.Server, error) {
 		return err
 	}
 	root := filepath.Join(s.fatimaRuntime.GetEnv().GetFolderGuide().GetDataFolder(), "control-v2")
-	c, err := control.New(root, pack.GetHost()+":"+pack.GetName(), auth)
+	c, err := control.New(root, pack.GetHost()+":"+pack.GetName(), auth, s.checkRemoteOperationV2)
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +50,17 @@ func (s *DomainService) NewControlV2() (*control.Server, error) {
 	c.History = s.deploymentHistoryV2
 	return c, nil
 }
+
+// checkRemoteOperationV2 preserves the legacy restriction on registration,
+// start and stop. Authentication remains mandatory for every control API.
+func (s *DomainService) checkRemoteOperationV2(ctx context.Context) error {
+	p, ok := peer.FromContext(ctx)
+	if !ok || !s.IsRemoteOperationAllowed(p.Addr.String()) {
+		return status.Error(codes.PermissionDenied, "remote operation is disabled")
+	}
+	return nil
+}
+
 func (s *DomainService) listCronV2() (result *api.CronCatalog, err error) {
 	defer func() {
 		if v := recover(); v != nil {

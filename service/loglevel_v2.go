@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-core/opm/api"
+	"github.com/fatima-go/fatima-core/v2/builder"
+	"github.com/fatima-go/fatima-opm/api"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
 	"google.golang.org/grpc/codes"

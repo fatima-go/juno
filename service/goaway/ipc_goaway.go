@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/fatima-go/fatima-core/ipc"
+	. "github.com/fatima-go/fatima-core/v2/ipc"
 	log "github.com/fatima-go/fatima-log"
 )
 

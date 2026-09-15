@@ -29,9 +29,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/opm/api"
-	"github.com/fatima-go/fatima-core/opm/transport"
+	"github.com/fatima-go/fatima-core/v2"
+	"github.com/fatima-go/fatima-opm/api"
+	"github.com/fatima-go/fatima-opm/transport"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/control"
 	"github.com/fatima-go/juno/deployment"

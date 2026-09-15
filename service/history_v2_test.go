@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-core/v2/builder"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

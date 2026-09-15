@@ -27,7 +27,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fatima-go/fatima-core/builder"
+	"github.com/fatima-go/fatima-core/v2/builder"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
 )

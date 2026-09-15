@@ -28,8 +28,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-core/ipc"
+	"github.com/fatima-go/fatima-core/v2/builder"
+	"github.com/fatima-go/fatima-core/v2/ipc"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
 	"github.com/robfig/cron"

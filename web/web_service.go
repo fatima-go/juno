@@ -23,7 +23,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-core/v2/lib"
 	"github.com/fatima-go/fatima-log"
 	"github.com/gorilla/mux"
 )

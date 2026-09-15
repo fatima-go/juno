@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fatima-go/fatima-core/builder"
-	"github.com/fatima-go/fatima-core/opm/api"
+	"github.com/fatima-go/fatima-core/v2/builder"
+	"github.com/fatima-go/fatima-opm/api"
 	"github.com/fatima-go/fatima-log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -3,7 +3,7 @@ package goaway
 import (
 	"context"
 	"fmt"
-	. "github.com/fatima-go/fatima-core/ipc"
+	. "github.com/fatima-go/fatima-core/v2/ipc"
 	"time"
 )
 

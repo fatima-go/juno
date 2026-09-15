@@ -21,7 +21,7 @@
 package domain
 
 import (
-	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/v2"
 )
 
 var managedOpmProcessSet = map[string]struct{}{"jupiter": {}, "juno": {}, "saturn": {}}

@@ -2,9 +2,9 @@ package control
 
 import (
 	"context"
-	"github.com/fatima-go/fatima-core/opm/api"
-	"github.com/fatima-go/fatima-core/opm/artifact"
-	"github.com/fatima-go/fatima-core/opm/operations"
+	"github.com/fatima-go/fatima-opm/api"
+	"github.com/fatima-go/fatima-opm/artifact"
+	"github.com/fatima-go/fatima-opm/operations"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

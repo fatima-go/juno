@@ -25,8 +25,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/ipc"
+	"github.com/fatima-go/fatima-core/v2"
+	"github.com/fatima-go/fatima-core/v2/ipc"
 	log "github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/juno/domain"
 	"github.com/fatima-go/juno/infra"

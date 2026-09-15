@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	fatima "github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/opm/api"
-	"github.com/fatima-go/fatima-core/opm/transport"
+	fatima "github.com/fatima-go/fatima-core/v2"
+	"github.com/fatima-go/fatima-opm/api"
+	"github.com/fatima-go/fatima-opm/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

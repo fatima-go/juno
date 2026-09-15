@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/fatima-go/fatima-core/opm/operations"
+	"github.com/fatima-go/fatima-opm/operations"
 	"sort"
 	"time"
 )

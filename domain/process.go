@@ -20,7 +20,7 @@
 
 package domain
 
-import "github.com/fatima-go/fatima-core"
+import "github.com/fatima-go/fatima-core/v2"
 
 type ProcessReport struct {
 	Package     BriefPackage `json:"package"`

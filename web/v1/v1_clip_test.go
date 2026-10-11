@@ -17,6 +17,7 @@
 package v1
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"mime"
@@ -160,6 +161,175 @@ func TestClipBinaryUnlimitedDeadlineOverridesServerWriteTimeout(t *testing.T) {
 	assert.Equal(t, "complete", string(body))
 }
 
+func TestClipUploadSavesBody(t *testing.T) {
+	content := []byte{0x00, 0x01, 0x7f, 0xff}
+	controller := &clipControllerStub{
+		save: func(name string, body io.Reader, contentLength int64, overwrite bool) (int64, error) {
+			assert.Equal(t, "한글.bin", name)
+			assert.Equal(t, int64(len(content)), contentLength)
+			assert.True(t, overwrite)
+			received, err := io.ReadAll(body)
+			require.NoError(t, err)
+			assert.Equal(t, content, received)
+			return int64(len(received)), nil
+		},
+	}
+	req := newClipUploadRequest("한글.bin", content)
+	req.Header.Set(web.HeaderFatimaClipOverwrite, "TRUE")
+	res := httptest.NewRecorder()
+
+	clipUpload(controller, res, req)
+
+	assert.Equal(t, http.StatusOK, res.Code)
+	assert.JSONEq(t, `{"filename":"한글.bin","size":4}`, res.Body.String())
+}
+
+func TestClipUploadDefaultsToNoOverwrite(t *testing.T) {
+	controller := &clipControllerStub{
+		save: func(_ string, _ io.Reader, _ int64, overwrite bool) (int64, error) {
+			assert.False(t, overwrite)
+			return 0, nil
+		},
+	}
+	res := httptest.NewRecorder()
+
+	clipUpload(controller, res, newClipUploadRequest("mydata.bin", nil))
+
+	assert.Equal(t, http.StatusOK, res.Code)
+}
+
+func TestClipUploadRejectsMissingFilename(t *testing.T) {
+	controller := &clipControllerStub{}
+	req := httptest.NewRequest(http.MethodPost, "/clip/v1", strings.NewReader("data"))
+	req.Header.Set(web.HeaderContentType, web.HeaderValueBinaryContentType)
+	res := httptest.NewRecorder()
+
+	clipUpload(controller, res, req)
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+}
+
+func TestClipUploadErrorResponses(t *testing.T) {
+	tests := []struct {
+		name       string
+		saveError  error
+		statusCode int
+	}{
+		{name: "invalid filename", saveError: domain.ErrInvalidClipBinaryFilename, statusCode: http.StatusBadRequest},
+		{name: "not regular", saveError: domain.ErrClipBinaryFileNotRegular, statusCode: http.StatusBadRequest},
+		{name: "incomplete", saveError: domain.ErrClipBinaryUploadIncomplete, statusCode: http.StatusBadRequest},
+		{name: "exists", saveError: domain.ErrClipBinaryFileExists, statusCode: http.StatusConflict},
+		{name: "too large", saveError: domain.ErrClipBinaryFileTooLarge, statusCode: http.StatusRequestEntityTooLarge},
+		{name: "busy", saveError: domain.ErrClipBinaryUploadBusy, statusCode: http.StatusServiceUnavailable},
+		{name: "internal", saveError: os.ErrPermission, statusCode: http.StatusInternalServerError},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			controller := &clipControllerStub{
+				save: func(string, io.Reader, int64, bool) (int64, error) {
+					return 0, test.saveError
+				},
+			}
+			res := httptest.NewRecorder()
+
+			clipUpload(controller, res, newClipUploadRequest("mydata.bin", []byte("data")))
+
+			assert.Equal(t, test.statusCode, res.Code)
+			assert.NotEmpty(t, res.Body.String())
+		})
+	}
+}
+
+func TestHandleClipUploadAllowsMonitorRole(t *testing.T) {
+	controller := &clipControllerStub{
+		save: func(string, io.Reader, int64, bool) (int64, error) {
+			return 0, nil
+		},
+	}
+	handler := &Version1Handler{controller: controller}
+	req := newClipUploadRequest("mydata.bin", nil)
+	req.Header.Set(domain.HEADER_FATIMA_AUTH_TOKEN, "test-token")
+	res := httptest.NewRecorder()
+
+	handler.HandleClipUpload(res, req)
+
+	assert.EqualValues(t, domain.ROLE_MONITOR, controller.role)
+	assert.Equal(t, http.StatusOK, res.Code)
+}
+
+func TestClipUploadDeadlineOverridesServerTimeouts(t *testing.T) {
+	handler := handlers.LoggingHandler(io.Discard, http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(newClipUploadBody(res, req.Body, 0))
+		time.Sleep(50 * time.Millisecond)
+		setClipBinaryWriteDeadline(res, clipUploadResponseTimeout)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		_, _ = res.Write(body)
+	}))
+	server := httptest.NewUnstartedServer(handler)
+	server.Config.ReadTimeout = 10 * time.Millisecond
+	server.Config.WriteTimeout = 10 * time.Millisecond
+	server.Start()
+	defer server.Close()
+
+	pr, pw := io.Pipe()
+	go func() {
+		_, _ = pw.Write([]byte("part1-"))
+		time.Sleep(30 * time.Millisecond)
+		_, _ = pw.Write([]byte("part2"))
+		_ = pw.Close()
+	}()
+	resp, err := http.Post(server.URL, web.HeaderValueBinaryContentType, pr)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, "part1-part2", string(body))
+}
+
+func TestClipUploadIdleTimeoutStopsStalledUpload(t *testing.T) {
+	readErr := make(chan error, 1)
+	handler := http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		body := newClipUploadBody(res, req.Body, 0)
+		reader, ok := body.(*clipUploadIdleReader)
+		require.True(t, ok)
+		reader.idle = 30 * time.Millisecond
+		_, err := io.ReadAll(reader)
+		readErr <- err
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	pr, pw := io.Pipe()
+	defer pw.Close()
+	go func() {
+		_, _ = pw.Write([]byte("part1-"))
+	}()
+	go func() {
+		resp, err := http.Post(server.URL, web.HeaderValueBinaryContentType, pr)
+		if err == nil {
+			resp.Body.Close()
+		}
+	}()
+
+	select {
+	case err := <-readErr:
+		assert.Error(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("stalled upload was not cut off by the idle timeout")
+	}
+}
+
+func newClipUploadRequest(filename string, content []byte) *http.Request {
+	req := httptest.NewRequest(http.MethodPost, "/clip/v1", bytes.NewReader(content))
+	req.Header.Set(web.HeaderContentType, web.HeaderValueBinaryContentType)
+	req.Header.Set(web.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
+	return req
+}
+
 func newBinaryClipRequest(t *testing.T, filename string) *http.Request {
 	t.Helper()
 	body := fmt.Sprintf(`{"filename":%q}`, filename)
@@ -172,6 +342,7 @@ type clipControllerStub struct {
 	web.JunoWebServiceController
 	clipboard string
 	open      func(string) (*os.File, os.FileInfo, error)
+	save      func(string, io.Reader, int64, bool) (int64, error)
 	timeout   time.Duration
 	role      domain.Role
 	token     string
@@ -195,5 +366,16 @@ func (controller *clipControllerStub) OpenClipBinaryFile(name string) (*os.File,
 }
 
 func (controller *clipControllerStub) GetClipBinaryWriteTimeout() time.Duration {
+	return controller.timeout
+}
+
+func (controller *clipControllerStub) SaveClipBinaryFile(name string, body io.Reader, contentLength int64, overwrite bool) (int64, error) {
+	if controller.save == nil {
+		return 0, domain.ErrInvalidClipBinaryFilename
+	}
+	return controller.save(name, body, contentLength, overwrite)
+}
+
+func (controller *clipControllerStub) GetClipBinaryUploadTimeout() time.Duration {
 	return controller.timeout
 }

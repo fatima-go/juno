@@ -132,6 +132,11 @@ func (version1 *Version1Handler) HandleClip(res http.ResponseWriter, req *http.R
 	version1.secureHandle(domain.ROLE_MONITOR, res, req, clip)
 }
 
+// HandleClipUpload accepts uploads from every role, same as clip downloads.
+func (version1 *Version1Handler) HandleClipUpload(res http.ResponseWriter, req *http.Request) {
+	version1.secureHandle(domain.ROLE_MONITOR, res, req, clipUpload)
+}
+
 func parsingRequest(req *http.Request) (map[string]string, error) {
 	params := make(map[string]string)
 

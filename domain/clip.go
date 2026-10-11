@@ -19,7 +19,10 @@ package domain
 import "errors"
 
 var (
-	ErrInvalidClipBinaryFilename = errors.New("invalid clip binary filename")
-	ErrClipBinaryFileNotRegular  = errors.New("clip binary file is not a regular file")
-	ErrClipBinaryFileTooLarge    = errors.New("clip binary file exceeds the size limit")
+	ErrInvalidClipBinaryFilename  = errors.New("invalid clip binary filename")
+	ErrClipBinaryFileNotRegular   = errors.New("clip binary file is not a regular file")
+	ErrClipBinaryFileTooLarge     = errors.New("clip binary file exceeds the size limit")
+	ErrClipBinaryFileExists       = errors.New("clip binary file already exists")
+	ErrClipBinaryUploadIncomplete = errors.New("clip binary upload is incomplete")
+	ErrClipBinaryUploadBusy       = errors.New("too many clip binary uploads in progress")
 )

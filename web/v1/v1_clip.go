@@ -95,6 +95,105 @@ func writeClipBinaryError(res http.ResponseWriter, req *http.Request, filename s
 	}
 }
 
+type clipUploadResult struct {
+	Filename string `json:"filename"`
+	Size     int64  `json:"size"`
+}
+
+func clipUpload(controller web.JunoWebServiceController, res http.ResponseWriter, req *http.Request) {
+	filename, err := clipUploadFilename(req)
+	if err != nil {
+		web.ResponseError(res, req, http.StatusBadRequest, err.Error())
+		return
+	}
+	overwrite := strings.EqualFold(strings.TrimSpace(req.Header.Get(web.HeaderFatimaClipOverwrite)), "true")
+
+	body := newClipUploadBody(res, req.Body, controller.GetClipBinaryUploadTimeout())
+	written, err := controller.SaveClipBinaryFile(filename, body, req.ContentLength, overwrite)
+	// the upload and fsync may outlast any deadline, so give the response its own
+	setClipBinaryWriteDeadline(res, clipUploadResponseTimeout)
+	if err != nil {
+		writeClipUploadError(res, req, filename, err)
+		return
+	}
+
+	log.Info("clip binary uploaded : %s (%d bytes)", filename, written)
+	b, _ := json.Marshal(clipUploadResult{Filename: filename, Size: written})
+	web.ResponseSuccess(res, req, string(b))
+}
+
+func clipUploadFilename(req *http.Request) (string, error) {
+	_, params, err := mime.ParseMediaType(req.Header.Get(web.HeaderContentDisposition))
+	if err != nil || params["filename"] == "" {
+		return "", errors.New("invalid content-disposition filename")
+	}
+	return params["filename"], nil
+}
+
+func writeClipUploadError(res http.ResponseWriter, req *http.Request, filename string, err error) {
+	switch {
+	case errors.Is(err, domain.ErrInvalidClipBinaryFilename),
+		errors.Is(err, domain.ErrClipBinaryFileNotRegular),
+		errors.Is(err, domain.ErrClipBinaryUploadIncomplete):
+		web.ResponseError(res, req, http.StatusBadRequest, err.Error())
+	case errors.Is(err, domain.ErrClipBinaryFileExists):
+		web.ResponseError(res, req, http.StatusConflict, "file already exists: "+filename)
+	case errors.Is(err, domain.ErrClipBinaryFileTooLarge):
+		web.ResponseError(res, req, http.StatusRequestEntityTooLarge, err.Error())
+	case errors.Is(err, domain.ErrClipBinaryUploadBusy):
+		web.ResponseError(res, req, http.StatusServiceUnavailable, err.Error())
+	default:
+		log.Warn("fail to save clip binary file %q: %s", filename, err.Error())
+		web.ResponseError(res, req, http.StatusInternalServerError, "fail to save binary file")
+	}
+}
+
+// newClipUploadBody replaces the server read timeout, which would otherwise cut
+// off large uploads, with an idle timeout renewed on every read and an optional
+// overall limit.
+func newClipUploadBody(res http.ResponseWriter, body io.Reader, timeout time.Duration) io.Reader {
+	reader := &clipUploadIdleReader{
+		reader:     body,
+		controller: http.NewResponseController(res),
+		idle:       clipUploadIdleTimeout,
+	}
+	if timeout > 0 {
+		reader.limit = time.Now().Add(timeout)
+	}
+	if err := reader.renewDeadline(); err != nil {
+		if !errors.Is(err, http.ErrNotSupported) {
+			log.Warn("fail to set clip binary read deadline: %s", err.Error())
+		}
+		return body
+	}
+	return reader
+}
+
+type clipUploadIdleReader struct {
+	reader     io.Reader
+	controller *http.ResponseController
+	idle       time.Duration
+	limit      time.Time
+}
+
+func (r *clipUploadIdleReader) Read(p []byte) (int, error) {
+	_ = r.renewDeadline()
+	return r.reader.Read(p)
+}
+
+func (r *clipUploadIdleReader) renewDeadline() error {
+	deadline := time.Now().Add(r.idle)
+	if !r.limit.IsZero() && r.limit.Before(deadline) {
+		deadline = r.limit
+	}
+	return r.controller.SetReadDeadline(deadline)
+}
+
+const (
+	clipUploadIdleTimeout     = 60 * time.Second
+	clipUploadResponseTimeout = 15 * time.Second
+)
+
 func setClipBinaryWriteDeadline(res http.ResponseWriter, timeout time.Duration) {
 	deadline := time.Time{}
 	if timeout > 0 {

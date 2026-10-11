@@ -42,6 +42,7 @@ const (
 type DomainService struct {
 	fatimaRuntime    fatima.FatimaRuntime
 	clipBinaryConfig clipBinaryConfig
+	clipUploadSlots  chan struct{}
 	ListenAddress    string
 	UrlSeed          string
 	//ValidateToken(token string, role domain.Role) error
@@ -50,6 +51,8 @@ type DomainService struct {
 func NewDomainService(fatimaRuntime fatima.FatimaRuntime) *DomainService {
 	service := DomainService{fatimaRuntime: fatimaRuntime}
 	service.clipBinaryConfig = loadClipBinaryConfig(fatimaRuntime.GetConfig())
+	service.clipUploadSlots = make(chan struct{}, maxConcurrentClipUploads)
+	removeStaleClipUploadFiles(fatimaRuntime.GetEnv().GetFolderGuide().GetDataFolder())
 
 	return &service
 }

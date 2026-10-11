@@ -21,6 +21,7 @@
 package web
 
 import (
+	"io"
 	"mime/multipart"
 	"os"
 	"time"
@@ -40,6 +41,8 @@ type JunoWebServiceController interface {
 	GetClipboard() string
 	OpenClipBinaryFile(name string) (*os.File, os.FileInfo, error)
 	GetClipBinaryWriteTimeout() time.Duration
+	SaveClipBinaryFile(name string, body io.Reader, contentLength int64, overwrite bool) (int64, error)
+	GetClipBinaryUploadTimeout() time.Duration
 	StopProcess(all bool, group string, proc string) map[string]interface{}
 	StartProcess(all bool, group string, proc string) map[string]interface{}
 	ListCronCommand() map[string]interface{}

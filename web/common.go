@@ -45,6 +45,7 @@ const (
 	HeaderFatimaResTime              = "Fatima-Response-Time"
 	HeaderFatimaTokenRole            = "Fatima-Token-Role"
 	HeaderContentDisposition         = "Content-Disposition"
+	HeaderFatimaClipOverwrite        = "Fatima-Clip-Overwrite"
 
 	HeaderValueUserAgent         = "fatima-application-juno"
 	HeaderValueCharset           = "UTF-8"

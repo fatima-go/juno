@@ -36,6 +36,7 @@ type WebServiceHandler interface {
 	HandleCron(method string, res http.ResponseWriter, req *http.Request)
 	HandleDeploy(res http.ResponseWriter, req *http.Request)
 	HandleClip(res http.ResponseWriter, req *http.Request)
+	HandleClipUpload(res http.ResponseWriter, req *http.Request)
 }
 
 type WebService struct {
@@ -106,6 +107,12 @@ func (webservice *WebService) GenerateSubRouter(router *mux.Router) {
 		Subrouter()
 
 	subrouter.HandleFunc("/{version}", webservice.Clip)
+
+	subrouter = router.PathPrefix("/"+webService.urlSeed+"/clip").
+		Methods("POST").
+		HeadersRegexp("Content-Type", `(?i)^application/octet-stream\s*(;.*)?$`).
+		Subrouter()
+	subrouter.HandleFunc("/{version}", webservice.ClipUpload)
 }
 
 func (handler *WebService) ServeHTTP(res http.ResponseWriter, req *http.Request) {
@@ -113,7 +120,7 @@ func (handler *WebService) ServeHTTP(res http.ResponseWriter, req *http.Request)
 }
 
 // var AccessControlAllowHeaderList = "Content-Type, Access-Control-Allow-Headers, Authorization, Fatima-Auth-Token, Fatima-Timezone"
-var AccessControlAllowHeaderList = "Content-Type, Fatima-Auth-Token, Fatima-Timezone, Fatima-Response-Time"
+var AccessControlAllowHeaderList = "Content-Type, Content-Disposition, Fatima-Auth-Token, Fatima-Timezone, Fatima-Response-Time, Fatima-Clip-Overwrite"
 var AccessControlExposeHeaderList = "Content-Type, Content-Disposition, Content-Length, Fatima-Timezone, Fatima-Response-Time"
 
 func writeCORSResponse(res http.ResponseWriter, req *http.Request) {
@@ -216,4 +223,21 @@ func (handler *WebService) Clip(res http.ResponseWriter, req *http.Request) {
 	}
 
 	service.HandleClip(res, req)
+}
+
+func (handler *WebService) ClipUpload(res http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	version, ok := vars["version"]
+	if !ok {
+		ResponseError(res, req, http.StatusBadRequest, "not found version")
+		return
+	}
+
+	service := handler.versions[version]
+	if service == nil {
+		ResponseError(res, req, http.StatusNotImplemented, "unsupported version")
+		return
+	}
+
+	service.HandleClipUpload(res, req)
 }
